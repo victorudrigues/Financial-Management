@@ -1,0 +1,62 @@
+# Build results
+bin/
+obj/
+out/
+publish/
+
+# Visual Studio / Rider / VS Code
+.vs/
+.idea/
+.vscode/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+*.userprefs
+
+# Rider
+*.DotSettings.user
+
+# NuGet
+*.nupkg
+*.snupkg
+**/packages/*
+!**/packages/build/
+.nuget/
+
+# Test results
+[Tt]est[Rr]esult*/
+*.trx
+*.coverage
+*.coveragexml
+
+# EF Core
+*.dbmdl
+*.jfm
+
+# Logs
+logs/
+*.log
+
+# Secrets / credentials / local overrides (keep appsettings.json and appsettings.Development.json)
+appsettings.*.local.json
+appsettings.Local.json
+appsettings.Production.json
+appsettings.Staging.json
+secrets.json
+credentials.json
+*.env
+.env
+.env.*
+*.pfx
+*.p12
+*.key
+*.pem
+*.cer
+*.crt
+*password*.json
+*secret*.json
+
+# OS files
+.DS_Store
+Thumbs.db

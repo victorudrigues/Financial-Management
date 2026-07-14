@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/FinancialManagement.Api/FinancialManagement.Api.csproj" />
+    <Project Path="src/FinancialManagement.Application/FinancialManagement.Application.csproj" />
+    <Project Path="src/FinancialManagement.Domain/FinancialManagement.Domain.csproj" />
+    <Project Path="src/FinancialManagement.Infrastructure/FinancialManagement.Infrastructure.csproj" />
+    <Project Path="src/FinancialManagement.SharedKernel/FinancialManagement.SharedKernel.csproj" />
+  </Folder>
+</Solution>

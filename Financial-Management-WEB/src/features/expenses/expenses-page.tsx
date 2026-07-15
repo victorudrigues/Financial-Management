@@ -21,7 +21,8 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { LabeledSelect } from "@/components/labeled-select";
+import { CurrencyInput } from "@/components/currency-input";
 import { useCreateExpense, useExpenses } from "@/features/expenses/api";
 import { useAccounts } from "@/features/accounts/api";
 import { useCategories } from "@/features/categories/api";
@@ -55,6 +56,10 @@ const schema = z.object({
 
 type FormValues = z.infer<typeof schema>;
 
+const paymentMethodOptions = Object.entries(PaymentMethodLabels).map(([value, label]) => ({ value, label }));
+const expenseNatureOptions = Object.entries(ExpenseNatureLabels).map(([value, label]) => ({ value, label }));
+const recurrenceOptions = Object.entries(RecurrenceTypeLabels).map(([value, label]) => ({ value, label }));
+
 export function ExpensesPage() {
   const [open, setOpen] = useState(false);
   const from = toIsoDate(firstDayOfMonth());
@@ -87,6 +92,12 @@ export function ExpensesPage() {
   });
 
   const expenseCategories = categories?.filter((c) => c.type === 2) ?? [];
+  const accountOptions = accounts?.map((account) => ({ value: account.id, label: account.name })) ?? [];
+  const categoryOptions = expenseCategories.map((category) => ({ value: category.id, label: category.name }));
+
+  function accountName(accountId: string) {
+    return accounts?.find((a) => a.id === accountId)?.name ?? "-";
+  }
 
   async function onSubmit(values: FormValues) {
     try {
@@ -127,7 +138,7 @@ export function ExpensesPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="amount">Valor</Label>
-                  <Input id="amount" type="number" step="0.01" {...register("amount", { valueAsNumber: true })} />
+                  <CurrencyInput id="amount" value={watch("amount")} onChange={(value) => setValue("amount", value)} />
                   {errors.amount && <p className="text-sm text-destructive">{errors.amount.message}</p>}
                 </div>
                 <div className="space-y-2">
@@ -136,92 +147,55 @@ export function ExpensesPage() {
                 </div>
               </div>
               <div className="space-y-2">
-                <Label>Conta</Label>
-                <Select value={watch("accountId")} onValueChange={(value) => setValue("accountId", value ?? "")}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione a conta" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {accounts?.map((account) => (
-                      <SelectItem key={account.id} value={account.id}>
-                        {account.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Label htmlFor="expense-account">Conta</Label>
+                <LabeledSelect
+                  id="expense-account"
+                  value={watch("accountId")}
+                  onValueChange={(value) => setValue("accountId", value)}
+                  options={accountOptions}
+                  placeholder="Selecione a conta"
+                />
                 {errors.accountId && <p className="text-sm text-destructive">{errors.accountId.message}</p>}
               </div>
               <div className="space-y-2">
-                <Label>Categoria</Label>
-                <Select value={watch("categoryId")} onValueChange={(value) => setValue("categoryId", value ?? "")}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione a categoria" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {expenseCategories.map((category) => (
-                      <SelectItem key={category.id} value={category.id}>
-                        {category.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Label htmlFor="expense-category">Categoria</Label>
+                <LabeledSelect
+                  id="expense-category"
+                  value={watch("categoryId")}
+                  onValueChange={(value) => setValue("categoryId", value)}
+                  options={categoryOptions}
+                  placeholder="Selecione a categoria"
+                />
                 {errors.categoryId && <p className="text-sm text-destructive">{errors.categoryId.message}</p>}
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>Natureza</Label>
-                  <Select
+                  <Label htmlFor="expense-nature">Natureza</Label>
+                  <LabeledSelect
+                    id="expense-nature"
                     value={String(watch("expenseNature"))}
                     onValueChange={(value) => setValue("expenseNature", Number(value))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {Object.entries(ExpenseNatureLabels).map(([value, label]) => (
-                        <SelectItem key={value} value={value}>
-                          {label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                    options={expenseNatureOptions}
+                  />
                 </div>
                 <div className="space-y-2">
-                  <Label>Recorrência</Label>
-                  <Select
+                  <Label htmlFor="expense-recurrence">Recorrência</Label>
+                  <LabeledSelect
+                    id="expense-recurrence"
                     value={String(watch("recurrence"))}
                     onValueChange={(value) => setValue("recurrence", Number(value))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {Object.entries(RecurrenceTypeLabels).map(([value, label]) => (
-                        <SelectItem key={value} value={value}>
-                          {label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                    options={recurrenceOptions}
+                  />
                 </div>
               </div>
               <div className="space-y-2">
-                <Label>Forma de Pagamento</Label>
-                <Select
+                <Label htmlFor="expense-payment-method">Forma de Pagamento</Label>
+                <LabeledSelect
+                  id="expense-payment-method"
                   value={String(watch("paymentMethod"))}
                   onValueChange={(value) => setValue("paymentMethod", Number(value))}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {Object.entries(PaymentMethodLabels).map(([value, label]) => (
-                      <SelectItem key={value} value={value}>
-                        {label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  options={paymentMethodOptions}
+                />
               </div>
               <DialogFooter>
                 <Button type="submit" disabled={createExpense.isPending}>
@@ -241,45 +215,51 @@ export function ExpensesPage() {
           {isLoading ? (
             <Skeleton className="h-40 w-full" />
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Descrição</TableHead>
-                  <TableHead>Data</TableHead>
-                  <TableHead>Valor</TableHead>
-                  <TableHead>Natureza</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="w-12" />
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {expenses?.map((transaction) => (
-                  <TableRow key={transaction.id}>
-                    <TableCell className="font-medium">{transaction.description}</TableCell>
-                    <TableCell>{formatDate(transaction.competenceDate)}</TableCell>
-                    <TableCell className="text-red-600 dark:text-red-400">
-                      {formatCurrency(transaction.amount)}
-                    </TableCell>
-                    <TableCell>
-                      {transaction.expenseNature ? ExpenseNatureLabels[transaction.expenseNature] : "-"}
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline">{TransactionStatusLabels[transaction.status]}</Badge>
-                    </TableCell>
-                    <TableCell>
-                      <TransactionActions transaction={transaction} />
-                    </TableCell>
-                  </TableRow>
-                ))}
-                {expenses?.length === 0 && (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center text-muted-foreground">
-                      Nenhuma despesa registrada no período.
-                    </TableCell>
+                    <TableHead>Descrição</TableHead>
+                    <TableHead>Data</TableHead>
+                    <TableHead>Valor</TableHead>
+                    <TableHead>Natureza</TableHead>
+                    <TableHead>Forma de Pagamento</TableHead>
+                    <TableHead>Conta</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="w-12" />
                   </TableRow>
-                )}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {expenses?.map((transaction) => (
+                    <TableRow key={transaction.id}>
+                      <TableCell className="font-medium">{transaction.description}</TableCell>
+                      <TableCell>{formatDate(transaction.competenceDate)}</TableCell>
+                      <TableCell className="text-red-600 dark:text-red-400">
+                        {formatCurrency(transaction.amount)}
+                      </TableCell>
+                      <TableCell>
+                        {transaction.expenseNature ? ExpenseNatureLabels[transaction.expenseNature] : "-"}
+                      </TableCell>
+                      <TableCell>{PaymentMethodLabels[transaction.paymentMethod]}</TableCell>
+                      <TableCell>{accountName(transaction.accountId)}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline">{TransactionStatusLabels[transaction.status]}</Badge>
+                      </TableCell>
+                      <TableCell>
+                        <TransactionActions transaction={transaction} />
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  {expenses?.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={8} className="text-center text-muted-foreground">
+                        Nenhuma despesa registrada no período.
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </div>
           )}
         </CardContent>
       </Card>

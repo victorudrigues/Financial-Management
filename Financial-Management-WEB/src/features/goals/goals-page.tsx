@@ -20,11 +20,14 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { LabeledSelect } from "@/components/labeled-select";
+import { CurrencyInput } from "@/components/currency-input";
 import { useCreateGoal, useDeleteGoal, useGoals, useUpdateGoal } from "@/features/goals/api";
 import { GoalResponse } from "@/types/dtos";
 import { GoalType, GoalTypeLabels } from "@/types/enums";
 import { formatCurrency, formatDate, toIsoDate } from "@/lib/format";
+
+const goalTypeOptions = Object.entries(GoalTypeLabels).map(([value, label]) => ({ value, label }));
 
 const schema = z.object({
   name: z.string().min(1, "Informe o nome da meta."),
@@ -128,27 +131,22 @@ export function GoalsPage() {
                 )}
               </div>
               <div className="space-y-2">
-                <Label>Tipo</Label>
-                <Select
+                <Label htmlFor="goal-type">Tipo</Label>
+                <LabeledSelect
+                  id="goal-type"
                   value={String(createForm.watch("type"))}
                   onValueChange={(value) => createForm.setValue("type", Number(value))}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {Object.entries(GoalTypeLabels).map(([value, label]) => (
-                      <SelectItem key={value} value={value}>
-                        {label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  options={goalTypeOptions}
+                />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="targetAmount">Valor Alvo</Label>
-                  <Input id="targetAmount" type="number" step="0.01" {...createForm.register("targetAmount", { valueAsNumber: true })} />
+                  <CurrencyInput
+                    id="targetAmount"
+                    value={createForm.watch("targetAmount")}
+                    onChange={(value) => createForm.setValue("targetAmount", value)}
+                  />
                   {createForm.formState.errors.targetAmount && (
                     <p className="text-sm text-destructive">{createForm.formState.errors.targetAmount.message}</p>
                   )}
@@ -182,27 +180,22 @@ export function GoalsPage() {
               )}
             </div>
             <div className="space-y-2">
-              <Label>Tipo</Label>
-              <Select
+              <Label htmlFor="edit-goal-type">Tipo</Label>
+              <LabeledSelect
+                id="edit-goal-type"
                 value={String(editForm.watch("type"))}
                 onValueChange={(value) => editForm.setValue("type", Number(value))}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {Object.entries(GoalTypeLabels).map(([value, label]) => (
-                    <SelectItem key={value} value={value}>
-                      {label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                options={goalTypeOptions}
+              />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="edit-goal-targetAmount">Valor Alvo</Label>
-                <Input id="edit-goal-targetAmount" type="number" step="0.01" {...editForm.register("targetAmount", { valueAsNumber: true })} />
+                <CurrencyInput
+                  id="edit-goal-targetAmount"
+                  value={editForm.watch("targetAmount")}
+                  onChange={(value) => editForm.setValue("targetAmount", value)}
+                />
                 {editForm.formState.errors.targetAmount && (
                   <p className="text-sm text-destructive">{editForm.formState.errors.targetAmount.message}</p>
                 )}

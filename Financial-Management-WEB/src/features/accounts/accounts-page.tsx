@@ -22,11 +22,14 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { LabeledSelect } from "@/components/labeled-select";
+import { CurrencyInput } from "@/components/currency-input";
 import { useAccounts, useCreateAccount, useDeleteAccount, useUpdateAccount } from "@/features/accounts/api";
 import { AccountType, AccountTypeLabels } from "@/types/enums";
 import { AccountResponse } from "@/types/dtos";
 import { formatCurrency } from "@/lib/format";
+
+const accountTypeOptions = Object.entries(AccountTypeLabels).map(([value, label]) => ({ value, label }));
 
 const schema = z.object({
   name: z.string().min(1, "Informe o nome da conta."),
@@ -120,26 +123,21 @@ export function AccountsPage() {
                 {errors.name && <p className="text-sm text-destructive">{errors.name.message}</p>}
               </div>
               <div className="space-y-2">
-                <Label>Tipo</Label>
-                <Select
+                <Label htmlFor="account-type">Tipo</Label>
+                <LabeledSelect
+                  id="account-type"
                   value={String(watch("type"))}
                   onValueChange={(value) => setValue("type", Number(value))}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {Object.entries(AccountTypeLabels).map(([value, label]) => (
-                      <SelectItem key={value} value={value}>
-                        {label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  options={accountTypeOptions}
+                />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="initialBalance">Saldo Inicial</Label>
-                <Input id="initialBalance" type="number" step="0.01" {...register("initialBalance", { valueAsNumber: true })} />
+                <CurrencyInput
+                  id="initialBalance"
+                  value={watch("initialBalance")}
+                  onChange={(value) => setValue("initialBalance", value)}
+                />
               </div>
               <DialogFooter>
                 <Button type="submit" disabled={createAccount.isPending}>

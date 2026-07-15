@@ -21,7 +21,8 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { LabeledSelect } from "@/components/labeled-select";
+import { CurrencyInput } from "@/components/currency-input";
 import { useCreateIncome, useIncome } from "@/features/income/api";
 import { useAccounts } from "@/features/accounts/api";
 import { useCategories } from "@/features/categories/api";
@@ -45,6 +46,8 @@ const schema = z.object({
 });
 
 type FormValues = z.infer<typeof schema>;
+
+const paymentMethodOptions = Object.entries(PaymentMethodLabels).map(([value, label]) => ({ value, label }));
 
 export function IncomePage() {
   const [open, setOpen] = useState(false);
@@ -77,6 +80,8 @@ export function IncomePage() {
   });
 
   const incomeCategories = categories?.filter((c) => c.type === 1) ?? [];
+  const accountOptions = accounts?.map((account) => ({ value: account.id, label: account.name })) ?? [];
+  const categoryOptions = incomeCategories.map((category) => ({ value: category.id, label: category.name }));
 
   async function onSubmit(values: FormValues) {
     try {
@@ -117,7 +122,7 @@ export function IncomePage() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="amount">Valor</Label>
-                  <Input id="amount" type="number" step="0.01" {...register("amount", { valueAsNumber: true })} />
+                  <CurrencyInput id="amount" value={watch("amount")} onChange={(value) => setValue("amount", value)} />
                   {errors.amount && <p className="text-sm text-destructive">{errors.amount.message}</p>}
                 </div>
                 <div className="space-y-2">
@@ -126,54 +131,35 @@ export function IncomePage() {
                 </div>
               </div>
               <div className="space-y-2">
-                <Label>Conta</Label>
-                <Select value={watch("accountId")} onValueChange={(value) => setValue("accountId", value ?? "")}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione a conta" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {accounts?.map((account) => (
-                      <SelectItem key={account.id} value={account.id}>
-                        {account.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Label htmlFor="income-account">Conta</Label>
+                <LabeledSelect
+                  id="income-account"
+                  value={watch("accountId")}
+                  onValueChange={(value) => setValue("accountId", value)}
+                  options={accountOptions}
+                  placeholder="Selecione a conta"
+                />
                 {errors.accountId && <p className="text-sm text-destructive">{errors.accountId.message}</p>}
               </div>
               <div className="space-y-2">
-                <Label>Categoria</Label>
-                <Select value={watch("categoryId")} onValueChange={(value) => setValue("categoryId", value ?? "")}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione a categoria" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {incomeCategories.map((category) => (
-                      <SelectItem key={category.id} value={category.id}>
-                        {category.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Label htmlFor="income-category">Categoria</Label>
+                <LabeledSelect
+                  id="income-category"
+                  value={watch("categoryId")}
+                  onValueChange={(value) => setValue("categoryId", value)}
+                  options={categoryOptions}
+                  placeholder="Selecione a categoria"
+                />
                 {errors.categoryId && <p className="text-sm text-destructive">{errors.categoryId.message}</p>}
               </div>
               <div className="space-y-2">
-                <Label>Forma de Pagamento</Label>
-                <Select
+                <Label htmlFor="income-payment-method">Forma de Pagamento</Label>
+                <LabeledSelect
+                  id="income-payment-method"
                   value={String(watch("paymentMethod"))}
                   onValueChange={(value) => setValue("paymentMethod", Number(value))}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {Object.entries(PaymentMethodLabels).map(([value, label]) => (
-                      <SelectItem key={value} value={value}>
-                        {label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  options={paymentMethodOptions}
+                />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="clientName">Cliente (opcional)</Label>

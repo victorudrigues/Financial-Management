@@ -22,10 +22,12 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { LabeledSelect } from "@/components/labeled-select";
 import { useCategories, useCreateCategory, useDeleteCategory, useUpdateCategory } from "@/features/categories/api";
 import { CategoryType, CategoryTypeLabels } from "@/types/enums";
 import { CategoryResponse } from "@/types/dtos";
+
+const categoryTypeOptions = Object.entries(CategoryTypeLabels).map(([value, label]) => ({ value, label }));
 
 const schema = z.object({
   name: z.string().min(1, "Informe o nome da categoria."),
@@ -118,22 +120,13 @@ export function CategoriesPage() {
                 {errors.name && <p className="text-sm text-destructive">{errors.name.message}</p>}
               </div>
               <div className="space-y-2">
-                <Label>Tipo</Label>
-                <Select
+                <Label htmlFor="category-type">Tipo</Label>
+                <LabeledSelect
+                  id="category-type"
                   value={String(watch("type"))}
                   onValueChange={(value) => setValue("type", Number(value))}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {Object.entries(CategoryTypeLabels).map(([value, label]) => (
-                      <SelectItem key={value} value={value}>
-                        {label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  options={categoryTypeOptions}
+                />
               </div>
               <DialogFooter>
                 <Button type="submit" disabled={createCategory.isPending}>

@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
+import { RowActions } from "@/components/row-actions";
 import {
   Dialog,
   DialogContent,
@@ -22,8 +23,9 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useCategories, useCreateCategory } from "@/features/categories/api";
+import { useCategories, useCreateCategory, useDeleteCategory, useUpdateCategory } from "@/features/categories/api";
 import { CategoryType, CategoryTypeLabels } from "@/types/enums";
+import { CategoryResponse } from "@/types/dtos";
 
 const schema = z.object({
   name: z.string().min(1, "Informe o nome da categoria."),
@@ -34,8 +36,13 @@ type FormValues = z.infer<typeof schema>;
 
 export function CategoriesPage() {
   const [open, setOpen] = useState(false);
+  const [editingCategory, setEditingCategory] = useState<CategoryResponse | null>(null);
+  const [editName, setEditName] = useState("");
+
   const { data: categories, isLoading } = useCategories();
   const createCategory = useCreateCategory();
+  const updateCategory = useUpdateCategory();
+  const deleteCategory = useDeleteCategory();
 
   const {
     register,
@@ -57,6 +64,31 @@ export function CategoriesPage() {
       setOpen(false);
     } catch {
       toast.error("Não foi possível criar a categoria.");
+    }
+  }
+
+  function openEdit(category: CategoryResponse) {
+    setEditingCategory(category);
+    setEditName(category.name);
+  }
+
+  async function handleUpdate() {
+    if (!editingCategory) return;
+    try {
+      await updateCategory.mutateAsync({ id: editingCategory.id, name: editName, color: editingCategory.color });
+      toast.success("Categoria atualizada com sucesso.");
+      setEditingCategory(null);
+    } catch {
+      toast.error("Não foi possível atualizar a categoria.");
+    }
+  }
+
+  async function handleDelete(category: CategoryResponse) {
+    try {
+      await deleteCategory.mutateAsync(category.id);
+      toast.success("Categoria excluída com sucesso.");
+    } catch {
+      toast.error("Não foi possível excluir a categoria. Verifique se não há movimentações vinculadas.");
     }
   }
 
@@ -113,6 +145,26 @@ export function CategoriesPage() {
         </Dialog>
       </div>
 
+      <Dialog open={!!editingCategory} onOpenChange={(isOpen) => !isOpen && setEditingCategory(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Editar Categoria</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="edit-name">Nome</Label>
+              <Input id="edit-name" value={editName} onChange={(e) => setEditName(e.target.value)} />
+            </div>
+            <p className="text-xs text-muted-foreground">O tipo não pode ser alterado após a criação da categoria.</p>
+            <DialogFooter>
+              <Button onClick={handleUpdate} disabled={updateCategory.isPending || !editName.trim()}>
+                {updateCategory.isPending ? "Salvando..." : "Salvar"}
+              </Button>
+            </DialogFooter>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       <Card>
         <CardHeader>
           <CardTitle>Categorias Cadastradas</CardTitle>
@@ -126,6 +178,7 @@ export function CategoriesPage() {
                 <TableRow>
                   <TableHead>Nome</TableHead>
                   <TableHead>Tipo</TableHead>
+                  <TableHead className="w-12" />
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -135,11 +188,18 @@ export function CategoriesPage() {
                     <TableCell>
                       <Badge variant="outline">{CategoryTypeLabels[category.type]}</Badge>
                     </TableCell>
+                    <TableCell>
+                      <RowActions
+                        onEdit={() => openEdit(category)}
+                        onDelete={() => handleDelete(category)}
+                        deleteConfirmMessage={`Excluir a categoria "${category.name}"? Essa ação não pode ser desfeita.`}
+                      />
+                    </TableCell>
                   </TableRow>
                 ))}
                 {categories?.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={2} className="text-center text-muted-foreground">
+                    <TableCell colSpan={3} className="text-center text-muted-foreground">
                       Nenhuma categoria cadastrada.
                     </TableCell>
                   </TableRow>

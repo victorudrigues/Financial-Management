@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
+import { RowActions } from "@/components/row-actions";
 import {
   Dialog,
   DialogContent,
@@ -22,8 +23,9 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useAccounts, useCreateAccount } from "@/features/accounts/api";
+import { useAccounts, useCreateAccount, useDeleteAccount, useUpdateAccount } from "@/features/accounts/api";
 import { AccountType, AccountTypeLabels } from "@/types/enums";
+import { AccountResponse } from "@/types/dtos";
 import { formatCurrency } from "@/lib/format";
 
 const schema = z.object({
@@ -36,8 +38,13 @@ type FormValues = z.infer<typeof schema>;
 
 export function AccountsPage() {
   const [open, setOpen] = useState(false);
+  const [editingAccount, setEditingAccount] = useState<AccountResponse | null>(null);
+  const [editName, setEditName] = useState("");
+
   const { data: accounts, isLoading } = useAccounts();
   const createAccount = useCreateAccount();
+  const updateAccount = useUpdateAccount();
+  const deleteAccount = useDeleteAccount();
 
   const {
     register,
@@ -59,6 +66,31 @@ export function AccountsPage() {
       setOpen(false);
     } catch {
       toast.error("Não foi possível criar a conta.");
+    }
+  }
+
+  function openEdit(account: AccountResponse) {
+    setEditingAccount(account);
+    setEditName(account.name);
+  }
+
+  async function handleUpdate() {
+    if (!editingAccount) return;
+    try {
+      await updateAccount.mutateAsync({ id: editingAccount.id, name: editName });
+      toast.success("Conta atualizada com sucesso.");
+      setEditingAccount(null);
+    } catch {
+      toast.error("Não foi possível atualizar a conta.");
+    }
+  }
+
+  async function handleDelete(account: AccountResponse) {
+    try {
+      await deleteAccount.mutateAsync(account.id);
+      toast.success("Conta excluída com sucesso.");
+    } catch {
+      toast.error("Não foi possível excluir a conta. Verifique se não há movimentações vinculadas.");
     }
   }
 
@@ -119,6 +151,28 @@ export function AccountsPage() {
         </Dialog>
       </div>
 
+      <Dialog open={!!editingAccount} onOpenChange={(isOpen) => !isOpen && setEditingAccount(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Editar Conta</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="edit-name">Nome</Label>
+              <Input id="edit-name" value={editName} onChange={(e) => setEditName(e.target.value)} />
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Tipo e saldo inicial não podem ser alterados após a criação da conta.
+            </p>
+            <DialogFooter>
+              <Button onClick={handleUpdate} disabled={updateAccount.isPending || !editName.trim()}>
+                {updateAccount.isPending ? "Salvando..." : "Salvar"}
+              </Button>
+            </DialogFooter>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       <Card>
         <CardHeader>
           <CardTitle>Contas Cadastradas</CardTitle>
@@ -134,6 +188,7 @@ export function AccountsPage() {
                   <TableHead>Tipo</TableHead>
                   <TableHead>Saldo Atual</TableHead>
                   <TableHead>Status</TableHead>
+                  <TableHead className="w-12" />
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -147,11 +202,18 @@ export function AccountsPage() {
                         {account.isActive ? "Ativa" : "Inativa"}
                       </Badge>
                     </TableCell>
+                    <TableCell>
+                      <RowActions
+                        onEdit={() => openEdit(account)}
+                        onDelete={() => handleDelete(account)}
+                        deleteConfirmMessage={`Excluir a conta "${account.name}"? Essa ação não pode ser desfeita.`}
+                      />
+                    </TableCell>
                   </TableRow>
                 ))}
                 {accounts?.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={4} className="text-center text-muted-foreground">
+                    <TableCell colSpan={5} className="text-center text-muted-foreground">
                       Nenhuma conta cadastrada.
                     </TableCell>
                   </TableRow>

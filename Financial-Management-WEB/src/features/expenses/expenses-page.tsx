@@ -25,6 +25,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useCreateExpense, useExpenses } from "@/features/expenses/api";
 import { useAccounts } from "@/features/accounts/api";
 import { useCategories } from "@/features/categories/api";
+import { TransactionActions } from "@/features/transactions/transaction-actions";
 import {
   ExpenseNature,
   ExpenseNatureLabels,
@@ -248,6 +249,7 @@ export function ExpensesPage() {
                   <TableHead>Valor</TableHead>
                   <TableHead>Natureza</TableHead>
                   <TableHead>Status</TableHead>
+                  <TableHead className="w-12" />
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -264,11 +266,14 @@ export function ExpensesPage() {
                     <TableCell>
                       <Badge variant="outline">{TransactionStatusLabels[transaction.status]}</Badge>
                     </TableCell>
+                    <TableCell>
+                      <TransactionActions transaction={transaction} />
+                    </TableCell>
                   </TableRow>
                 ))}
                 {expenses?.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center text-muted-foreground">
+                    <TableCell colSpan={6} className="text-center text-muted-foreground">
                       Nenhuma despesa registrada no período.
                     </TableCell>
                   </TableRow>

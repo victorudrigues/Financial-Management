@@ -25,6 +25,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useCreateIncome, useIncome } from "@/features/income/api";
 import { useAccounts } from "@/features/accounts/api";
 import { useCategories } from "@/features/categories/api";
+import { TransactionActions } from "@/features/transactions/transaction-actions";
 import { PaymentMethod, PaymentMethodLabels, TransactionStatusLabels } from "@/types/enums";
 import { formatCurrency, formatDate, toIsoDate } from "@/lib/format";
 
@@ -203,6 +204,7 @@ export function IncomePage() {
                   <TableHead>Data</TableHead>
                   <TableHead>Valor</TableHead>
                   <TableHead>Status</TableHead>
+                  <TableHead className="w-12" />
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -216,11 +218,14 @@ export function IncomePage() {
                     <TableCell>
                       <Badge variant="outline">{TransactionStatusLabels[transaction.status]}</Badge>
                     </TableCell>
+                    <TableCell>
+                      <TransactionActions transaction={transaction} />
+                    </TableCell>
                   </TableRow>
                 ))}
                 {income?.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={4} className="text-center text-muted-foreground">
+                    <TableCell colSpan={5} className="text-center text-muted-foreground">
                       Nenhuma receita registrada no período.
                     </TableCell>
                   </TableRow>

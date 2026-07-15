@@ -29,3 +29,28 @@ export function useCreateCostCenter() {
     },
   });
 }
+
+export function useUpdateCostCenter() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, ...input }: CreateCostCenterInput & { id: string }) => {
+      const { data } = await apiClient.put<CostCenterResponse>(`/api/cost-centers/${id}`, input);
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["cost-centers"] });
+    },
+  });
+}
+
+export function useDeleteCostCenter() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      await apiClient.delete(`/api/cost-centers/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["cost-centers"] });
+    },
+  });
+}

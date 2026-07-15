@@ -32,3 +32,28 @@ export function useCreateGoal() {
     },
   });
 }
+
+export function useUpdateGoal() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, ...input }: CreateGoalInput & { id: string }) => {
+      const { data } = await apiClient.put<GoalResponse>(`/api/goals/${id}`, input);
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["goals"] });
+    },
+  });
+}
+
+export function useDeleteGoal() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      await apiClient.delete(`/api/goals/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["goals"] });
+    },
+  });
+}

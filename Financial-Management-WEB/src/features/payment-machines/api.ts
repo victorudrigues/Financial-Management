@@ -34,3 +34,28 @@ export function useCreatePaymentMachine() {
     },
   });
 }
+
+export function useUpdatePaymentMachine() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, ...input }: CreatePaymentMachineInput & { id: string }) => {
+      const { data } = await apiClient.put<PaymentMachineResponse>(`/api/payment-machines/${id}`, input);
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["payment-machines"] });
+    },
+  });
+}
+
+export function useDeletePaymentMachine() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      await apiClient.delete(`/api/payment-machines/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["payment-machines"] });
+    },
+  });
+}

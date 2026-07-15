@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { RowActions } from "@/components/row-actions";
 import {
   Dialog,
   DialogContent,
@@ -20,7 +21,8 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useCreateGoal, useGoals } from "@/features/goals/api";
+import { useCreateGoal, useDeleteGoal, useGoals, useUpdateGoal } from "@/features/goals/api";
+import { GoalResponse } from "@/types/dtos";
 import { GoalType, GoalTypeLabels } from "@/types/enums";
 import { formatCurrency, formatDate, toIsoDate } from "@/lib/format";
 
@@ -33,36 +35,68 @@ const schema = z.object({
 
 type FormValues = z.infer<typeof schema>;
 
+function defaultDeadline() {
+  return toIsoDate(new Date(new Date().setMonth(new Date().getMonth() + 1)));
+}
+
 export function GoalsPage() {
   const [open, setOpen] = useState(false);
+  const [editingGoal, setEditingGoal] = useState<GoalResponse | null>(null);
+
   const { data: goals, isLoading } = useGoals();
   const createGoal = useCreateGoal();
+  const updateGoal = useUpdateGoal();
+  const deleteGoal = useDeleteGoal();
 
-  const {
-    register,
-    handleSubmit,
-    reset,
-    setValue,
-    watch,
-    formState: { errors },
-  } = useForm<FormValues>({
+  const createForm = useForm<FormValues>({
     resolver: zodResolver(schema),
-    defaultValues: {
-      name: "",
-      type: GoalType.Economizar,
-      targetAmount: 0,
-      deadline: toIsoDate(new Date(new Date().setMonth(new Date().getMonth() + 1))),
-    },
+    defaultValues: { name: "", type: GoalType.Economizar, targetAmount: 0, deadline: defaultDeadline() },
   });
 
-  async function onSubmit(values: FormValues) {
+  const editForm = useForm<FormValues>({
+    resolver: zodResolver(schema),
+    defaultValues: { name: "", type: GoalType.Economizar, targetAmount: 0, deadline: defaultDeadline() },
+  });
+
+  useEffect(() => {
+    if (editingGoal) {
+      editForm.reset({
+        name: editingGoal.name,
+        type: editingGoal.type,
+        targetAmount: editingGoal.targetAmount,
+        deadline: toIsoDate(new Date(editingGoal.deadline)),
+      });
+    }
+  }, [editingGoal, editForm]);
+
+  async function onCreate(values: FormValues) {
     try {
       await createGoal.mutateAsync(values);
       toast.success("Meta criada com sucesso.");
-      reset();
+      createForm.reset({ name: "", type: GoalType.Economizar, targetAmount: 0, deadline: defaultDeadline() });
       setOpen(false);
     } catch {
       toast.error("Não foi possível criar a meta.");
+    }
+  }
+
+  async function onUpdate(values: FormValues) {
+    if (!editingGoal) return;
+    try {
+      await updateGoal.mutateAsync({ id: editingGoal.id, ...values });
+      toast.success("Meta atualizada com sucesso.");
+      setEditingGoal(null);
+    } catch {
+      toast.error("Não foi possível atualizar a meta.");
+    }
+  }
+
+  async function handleDelete(goal: GoalResponse) {
+    try {
+      await deleteGoal.mutateAsync(goal.id);
+      toast.success("Meta excluída com sucesso.");
+    } catch {
+      toast.error("Não foi possível excluir a meta.");
     }
   }
 
@@ -85,15 +119,20 @@ export function GoalsPage() {
             <DialogHeader>
               <DialogTitle>Nova Meta</DialogTitle>
             </DialogHeader>
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+            <form onSubmit={createForm.handleSubmit(onCreate)} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="name">Nome</Label>
-                <Input id="name" {...register("name")} />
-                {errors.name && <p className="text-sm text-destructive">{errors.name.message}</p>}
+                <Input id="name" {...createForm.register("name")} />
+                {createForm.formState.errors.name && (
+                  <p className="text-sm text-destructive">{createForm.formState.errors.name.message}</p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label>Tipo</Label>
-                <Select value={String(watch("type"))} onValueChange={(value) => setValue("type", Number(value))}>
+                <Select
+                  value={String(createForm.watch("type"))}
+                  onValueChange={(value) => createForm.setValue("type", Number(value))}
+                >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -109,12 +148,14 @@ export function GoalsPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="targetAmount">Valor Alvo</Label>
-                  <Input id="targetAmount" type="number" step="0.01" {...register("targetAmount", { valueAsNumber: true })} />
-                  {errors.targetAmount && <p className="text-sm text-destructive">{errors.targetAmount.message}</p>}
+                  <Input id="targetAmount" type="number" step="0.01" {...createForm.register("targetAmount", { valueAsNumber: true })} />
+                  {createForm.formState.errors.targetAmount && (
+                    <p className="text-sm text-destructive">{createForm.formState.errors.targetAmount.message}</p>
+                  )}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="deadline">Prazo</Label>
-                  <Input id="deadline" type="date" {...register("deadline")} />
+                  <Input id="deadline" type="date" {...createForm.register("deadline")} />
                 </div>
               </div>
               <DialogFooter>
@@ -127,14 +168,72 @@ export function GoalsPage() {
         </Dialog>
       </div>
 
+      <Dialog open={!!editingGoal} onOpenChange={(isOpen) => !isOpen && setEditingGoal(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Editar Meta</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={editForm.handleSubmit(onUpdate)} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="edit-goal-name">Nome</Label>
+              <Input id="edit-goal-name" {...editForm.register("name")} />
+              {editForm.formState.errors.name && (
+                <p className="text-sm text-destructive">{editForm.formState.errors.name.message}</p>
+              )}
+            </div>
+            <div className="space-y-2">
+              <Label>Tipo</Label>
+              <Select
+                value={String(editForm.watch("type"))}
+                onValueChange={(value) => editForm.setValue("type", Number(value))}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.entries(GoalTypeLabels).map(([value, label]) => (
+                    <SelectItem key={value} value={value}>
+                      {label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-goal-targetAmount">Valor Alvo</Label>
+                <Input id="edit-goal-targetAmount" type="number" step="0.01" {...editForm.register("targetAmount", { valueAsNumber: true })} />
+                {editForm.formState.errors.targetAmount && (
+                  <p className="text-sm text-destructive">{editForm.formState.errors.targetAmount.message}</p>
+                )}
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-goal-deadline">Prazo</Label>
+                <Input id="edit-goal-deadline" type="date" {...editForm.register("deadline")} />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button type="submit" disabled={updateGoal.isPending}>
+                {updateGoal.isPending ? "Salvando..." : "Salvar"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
       {isLoading ? (
         <Skeleton className="h-40 w-full" />
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {goals?.map((goal) => (
             <Card key={goal.id}>
-              <CardHeader>
+              <CardHeader className="flex flex-row items-start justify-between space-y-0">
                 <CardTitle className="text-base">{goal.name}</CardTitle>
+                <RowActions
+                  onEdit={() => setEditingGoal(goal)}
+                  onDelete={() => handleDelete(goal)}
+                  deleteConfirmMessage={`Excluir a meta "${goal.name}"? Essa ação não pode ser desfeita.`}
+                />
               </CardHeader>
               <CardContent className="space-y-2">
                 <p className="text-sm text-muted-foreground">{GoalTypeLabels[goal.type]}</p>

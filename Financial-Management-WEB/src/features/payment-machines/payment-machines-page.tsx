@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useForm } from "react-hook-form";
+import { useEffect, useState } from "react";
+import { useForm, UseFormRegister, FieldErrors } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
+import { RowActions } from "@/components/row-actions";
 import {
   Dialog,
   DialogContent,
@@ -20,7 +21,13 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { useCreatePaymentMachine, usePaymentMachines } from "@/features/payment-machines/api";
+import {
+  useCreatePaymentMachine,
+  useDeletePaymentMachine,
+  usePaymentMachines,
+  useUpdatePaymentMachine,
+} from "@/features/payment-machines/api";
+import { PaymentMachineResponse } from "@/types/dtos";
 import { formatPercent } from "@/lib/format";
 
 const schema = z.object({
@@ -35,37 +42,116 @@ const schema = z.object({
 
 type FormValues = z.infer<typeof schema>;
 
+const DEFAULT_VALUES: FormValues = {
+  name: "",
+  debitFeePercent: 1.5,
+  creditFeePercent: 3.5,
+  installmentFeePercent: 4.5,
+  pixFeePercent: 0.5,
+  settlementDays: 1,
+  allowsAnticipation: false,
+};
+
+function PaymentMachineFormFields({
+  register,
+  errors,
+  idPrefix,
+}: {
+  register: UseFormRegister<FormValues>;
+  errors: FieldErrors<FormValues>;
+  idPrefix: string;
+}) {
+  return (
+    <>
+      <div className="space-y-2">
+        <Label htmlFor={`${idPrefix}-name`}>Nome</Label>
+        <Input id={`${idPrefix}-name`} {...register("name")} />
+        {errors.name && <p className="text-sm text-destructive">{errors.name.message}</p>}
+      </div>
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label htmlFor={`${idPrefix}-debitFeePercent`}>Taxa Débito (%)</Label>
+          <Input id={`${idPrefix}-debitFeePercent`} type="number" step="0.01" {...register("debitFeePercent", { valueAsNumber: true })} />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor={`${idPrefix}-creditFeePercent`}>Taxa Crédito (%)</Label>
+          <Input id={`${idPrefix}-creditFeePercent`} type="number" step="0.01" {...register("creditFeePercent", { valueAsNumber: true })} />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor={`${idPrefix}-installmentFeePercent`}>Taxa Parcelado (%)</Label>
+          <Input id={`${idPrefix}-installmentFeePercent`} type="number" step="0.01" {...register("installmentFeePercent", { valueAsNumber: true })} />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor={`${idPrefix}-pixFeePercent`}>Taxa PIX (%)</Label>
+          <Input id={`${idPrefix}-pixFeePercent`} type="number" step="0.01" {...register("pixFeePercent", { valueAsNumber: true })} />
+        </div>
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor={`${idPrefix}-settlementDays`}>Prazo de Recebimento (dias)</Label>
+        <Input id={`${idPrefix}-settlementDays`} type="number" {...register("settlementDays", { valueAsNumber: true })} />
+      </div>
+      <div className="flex items-center gap-2">
+        <input id={`${idPrefix}-allowsAnticipation`} type="checkbox" className="h-4 w-4" {...register("allowsAnticipation")} />
+        <Label htmlFor={`${idPrefix}-allowsAnticipation`}>Permite antecipação</Label>
+      </div>
+    </>
+  );
+}
+
 export function PaymentMachinesPage() {
   const [open, setOpen] = useState(false);
+  const [editingMachine, setEditingMachine] = useState<PaymentMachineResponse | null>(null);
+
   const { data: machines, isLoading } = usePaymentMachines();
   const createMachine = useCreatePaymentMachine();
+  const updateMachine = useUpdatePaymentMachine();
+  const deleteMachine = useDeletePaymentMachine();
 
-  const {
-    register,
-    handleSubmit,
-    reset,
-    formState: { errors },
-  } = useForm<FormValues>({
-    resolver: zodResolver(schema),
-    defaultValues: {
-      name: "",
-      debitFeePercent: 1.5,
-      creditFeePercent: 3.5,
-      installmentFeePercent: 4.5,
-      pixFeePercent: 0.5,
-      settlementDays: 1,
-      allowsAnticipation: false,
-    },
-  });
+  const createForm = useForm<FormValues>({ resolver: zodResolver(schema), defaultValues: DEFAULT_VALUES });
+  const editForm = useForm<FormValues>({ resolver: zodResolver(schema), defaultValues: DEFAULT_VALUES });
 
-  async function onSubmit(values: FormValues) {
+  useEffect(() => {
+    if (editingMachine) {
+      editForm.reset({
+        name: editingMachine.name,
+        debitFeePercent: editingMachine.debitFeePercent,
+        creditFeePercent: editingMachine.creditFeePercent,
+        installmentFeePercent: editingMachine.installmentFeePercent,
+        pixFeePercent: editingMachine.pixFeePercent,
+        settlementDays: editingMachine.settlementDays,
+        allowsAnticipation: editingMachine.allowsAnticipation,
+      });
+    }
+  }, [editingMachine, editForm]);
+
+  async function onCreate(values: FormValues) {
     try {
       await createMachine.mutateAsync(values);
       toast.success("Maquineta cadastrada com sucesso.");
-      reset();
+      createForm.reset(DEFAULT_VALUES);
       setOpen(false);
     } catch {
       toast.error("Não foi possível cadastrar a maquineta.");
+    }
+  }
+
+  async function onUpdate(values: FormValues) {
+    if (!editingMachine) return;
+    try {
+      await updateMachine.mutateAsync({ id: editingMachine.id, ...values });
+      toast.success("Maquineta atualizada com sucesso.");
+      setEditingMachine(null);
+    } catch {
+      toast.error("Não foi possível atualizar a maquineta.");
+    }
+  }
+
+  async function handleDelete(machine: PaymentMachineResponse) {
+    try {
+      await deleteMachine.mutateAsync(machine.id);
+      toast.success("Maquineta excluída com sucesso.");
+    } catch {
+      toast.error("Não foi possível excluir a maquineta.");
     }
   }
 
@@ -88,38 +174,8 @@ export function PaymentMachinesPage() {
             <DialogHeader>
               <DialogTitle>Nova Maquineta</DialogTitle>
             </DialogHeader>
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="name">Nome</Label>
-                <Input id="name" {...register("name")} />
-                {errors.name && <p className="text-sm text-destructive">{errors.name.message}</p>}
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="debitFeePercent">Taxa Débito (%)</Label>
-                  <Input id="debitFeePercent" type="number" step="0.01" {...register("debitFeePercent", { valueAsNumber: true })} />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="creditFeePercent">Taxa Crédito (%)</Label>
-                  <Input id="creditFeePercent" type="number" step="0.01" {...register("creditFeePercent", { valueAsNumber: true })} />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="installmentFeePercent">Taxa Parcelado (%)</Label>
-                  <Input id="installmentFeePercent" type="number" step="0.01" {...register("installmentFeePercent", { valueAsNumber: true })} />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="pixFeePercent">Taxa PIX (%)</Label>
-                  <Input id="pixFeePercent" type="number" step="0.01" {...register("pixFeePercent", { valueAsNumber: true })} />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="settlementDays">Prazo de Recebimento (dias)</Label>
-                <Input id="settlementDays" type="number" {...register("settlementDays", { valueAsNumber: true })} />
-              </div>
-              <div className="flex items-center gap-2">
-                <input id="allowsAnticipation" type="checkbox" className="h-4 w-4" {...register("allowsAnticipation")} />
-                <Label htmlFor="allowsAnticipation">Permite antecipação</Label>
-              </div>
+            <form onSubmit={createForm.handleSubmit(onCreate)} className="space-y-4">
+              <PaymentMachineFormFields register={createForm.register} errors={createForm.formState.errors} idPrefix="create" />
               <DialogFooter>
                 <Button type="submit" disabled={createMachine.isPending}>
                   {createMachine.isPending ? "Salvando..." : "Salvar"}
@@ -129,6 +185,22 @@ export function PaymentMachinesPage() {
           </DialogContent>
         </Dialog>
       </div>
+
+      <Dialog open={!!editingMachine} onOpenChange={(isOpen) => !isOpen && setEditingMachine(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Editar Maquineta</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={editForm.handleSubmit(onUpdate)} className="space-y-4">
+            <PaymentMachineFormFields register={editForm.register} errors={editForm.formState.errors} idPrefix="edit" />
+            <DialogFooter>
+              <Button type="submit" disabled={updateMachine.isPending}>
+                {updateMachine.isPending ? "Salvando..." : "Salvar"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       <Card>
         <CardHeader>
@@ -147,6 +219,7 @@ export function PaymentMachinesPage() {
                   <TableHead>Parcelado</TableHead>
                   <TableHead>PIX</TableHead>
                   <TableHead>Prazo</TableHead>
+                  <TableHead className="w-12" />
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -158,11 +231,18 @@ export function PaymentMachinesPage() {
                     <TableCell>{formatPercent(machine.installmentFeePercent)}</TableCell>
                     <TableCell>{formatPercent(machine.pixFeePercent)}</TableCell>
                     <TableCell>{machine.settlementDays} dias</TableCell>
+                    <TableCell>
+                      <RowActions
+                        onEdit={() => setEditingMachine(machine)}
+                        onDelete={() => handleDelete(machine)}
+                        deleteConfirmMessage={`Excluir a maquineta "${machine.name}"? Essa ação não pode ser desfeita.`}
+                      />
+                    </TableCell>
                   </TableRow>
                 ))}
                 {machines?.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center text-muted-foreground">
+                    <TableCell colSpan={7} className="text-center text-muted-foreground">
                       Nenhuma maquineta cadastrada.
                     </TableCell>
                   </TableRow>

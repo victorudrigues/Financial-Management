@@ -28,6 +28,21 @@ public class Goal : BaseEntity
         Deadline = deadline;
     }
 
+    public void Update(string name, GoalType type, decimal targetAmount, DateTime deadline)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+            throw new ArgumentException("O nome da meta é obrigatório.", nameof(name));
+
+        if (targetAmount <= 0)
+            throw new ArgumentException("O valor alvo deve ser positivo.", nameof(targetAmount));
+
+        Name = name;
+        Type = type;
+        TargetAmount = targetAmount;
+        Deadline = deadline;
+        IsAchieved = CurrentAmount >= TargetAmount;
+    }
+
     public void UpdateProgress(decimal currentAmount)
     {
         if (currentAmount < 0)

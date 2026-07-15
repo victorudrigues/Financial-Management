@@ -26,7 +26,9 @@ import { CurrencyInput } from "@/components/currency-input";
 import { useCreateExpense, useExpenses } from "@/features/expenses/api";
 import { useAccounts } from "@/features/accounts/api";
 import { useCategories } from "@/features/categories/api";
+import { useCostCenters } from "@/features/cost-centers/api";
 import { TransactionActions } from "@/features/transactions/transaction-actions";
+import { TransactionDetailsDialog } from "@/features/transactions/transaction-details-dialog";
 import {
   ExpenseNature,
   ExpenseNatureLabels,
@@ -36,6 +38,7 @@ import {
   RecurrenceTypeLabels,
   TransactionStatusLabels,
 } from "@/types/enums";
+import { TransactionResponse } from "@/types/dtos";
 import { formatCurrency, formatDate, toIsoDate } from "@/lib/format";
 
 function firstDayOfMonth() {
@@ -62,12 +65,14 @@ const recurrenceOptions = Object.entries(RecurrenceTypeLabels).map(([value, labe
 
 export function ExpensesPage() {
   const [open, setOpen] = useState(false);
+  const [viewingTransaction, setViewingTransaction] = useState<TransactionResponse | null>(null);
   const from = toIsoDate(firstDayOfMonth());
   const to = toIsoDate(new Date());
 
   const { data: expenses, isLoading } = useExpenses(from, to);
   const { data: accounts } = useAccounts();
   const { data: categories } = useCategories();
+  const { data: costCenters } = useCostCenters();
   const createExpense = useCreateExpense();
 
   const {
@@ -246,7 +251,7 @@ export function ExpensesPage() {
                         <Badge variant="outline">{TransactionStatusLabels[transaction.status]}</Badge>
                       </TableCell>
                       <TableCell>
-                        <TransactionActions transaction={transaction} />
+                        <TransactionActions transaction={transaction} onView={() => setViewingTransaction(transaction)} />
                       </TableCell>
                     </TableRow>
                   ))}
@@ -263,6 +268,14 @@ export function ExpensesPage() {
           )}
         </CardContent>
       </Card>
+
+      <TransactionDetailsDialog
+        transaction={viewingTransaction}
+        onClose={() => setViewingTransaction(null)}
+        accounts={accounts}
+        categories={categories}
+        costCenters={costCenters}
+      />
     </div>
   );
 }

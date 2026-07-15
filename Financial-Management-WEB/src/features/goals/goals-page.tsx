@@ -42,9 +42,12 @@ function defaultDeadline() {
   return toIsoDate(new Date(new Date().setMonth(new Date().getMonth() + 1)));
 }
 
+type DialogMode = "view" | "edit";
+
 export function GoalsPage() {
   const [open, setOpen] = useState(false);
   const [editingGoal, setEditingGoal] = useState<GoalResponse | null>(null);
+  const [dialogMode, setDialogMode] = useState<DialogMode>("edit");
 
   const { data: goals, isLoading } = useGoals();
   const createGoal = useCreateGoal();
@@ -169,12 +172,12 @@ export function GoalsPage() {
       <Dialog open={!!editingGoal} onOpenChange={(isOpen) => !isOpen && setEditingGoal(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Editar Meta</DialogTitle>
+            <DialogTitle>{dialogMode === "view" ? "Detalhes da Meta" : "Editar Meta"}</DialogTitle>
           </DialogHeader>
           <form onSubmit={editForm.handleSubmit(onUpdate)} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="edit-goal-name">Nome</Label>
-              <Input id="edit-goal-name" {...editForm.register("name")} />
+              <Input id="edit-goal-name" disabled={dialogMode === "view"} {...editForm.register("name")} />
               {editForm.formState.errors.name && (
                 <p className="text-sm text-destructive">{editForm.formState.errors.name.message}</p>
               )}
@@ -186,6 +189,7 @@ export function GoalsPage() {
                 value={String(editForm.watch("type"))}
                 onValueChange={(value) => editForm.setValue("type", Number(value))}
                 options={goalTypeOptions}
+                disabled={dialogMode === "view"}
               />
             </div>
             <div className="grid grid-cols-2 gap-4">
@@ -195,6 +199,7 @@ export function GoalsPage() {
                   id="edit-goal-targetAmount"
                   value={editForm.watch("targetAmount")}
                   onChange={(value) => editForm.setValue("targetAmount", value)}
+                  disabled={dialogMode === "view"}
                 />
                 {editForm.formState.errors.targetAmount && (
                   <p className="text-sm text-destructive">{editForm.formState.errors.targetAmount.message}</p>
@@ -202,13 +207,27 @@ export function GoalsPage() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="edit-goal-deadline">Prazo</Label>
-                <Input id="edit-goal-deadline" type="date" {...editForm.register("deadline")} />
+                <Input id="edit-goal-deadline" type="date" disabled={dialogMode === "view"} {...editForm.register("deadline")} />
               </div>
             </div>
+            {dialogMode === "view" && (
+              <div className="space-y-2">
+                <Label>Valor Atual / Progresso</Label>
+                <p className="text-sm font-medium">
+                  {editingGoal ? formatCurrency(editingGoal.currentAmount) : "-"} ({editingGoal?.progressPercent ?? 0}%)
+                </p>
+              </div>
+            )}
             <DialogFooter>
-              <Button type="submit" disabled={updateGoal.isPending}>
-                {updateGoal.isPending ? "Salvando..." : "Salvar"}
-              </Button>
+              {dialogMode === "view" ? (
+                <Button type="button" variant="outline" onClick={() => setEditingGoal(null)}>
+                  Fechar
+                </Button>
+              ) : (
+                <Button type="submit" disabled={updateGoal.isPending}>
+                  {updateGoal.isPending ? "Salvando..." : "Salvar"}
+                </Button>
+              )}
             </DialogFooter>
           </form>
         </DialogContent>
@@ -223,7 +242,14 @@ export function GoalsPage() {
               <CardHeader className="flex flex-row items-start justify-between space-y-0">
                 <CardTitle className="text-base">{goal.name}</CardTitle>
                 <RowActions
-                  onEdit={() => setEditingGoal(goal)}
+                  onView={() => {
+                    setDialogMode("view");
+                    setEditingGoal(goal);
+                  }}
+                  onEdit={() => {
+                    setDialogMode("edit");
+                    setEditingGoal(goal);
+                  }}
                   onDelete={() => handleDelete(goal)}
                   deleteConfirmMessage={`Excluir a meta "${goal.name}"? Essa ação não pode ser desfeita.`}
                 />

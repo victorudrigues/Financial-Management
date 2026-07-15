@@ -36,9 +36,11 @@ const schema = z.object({
 
 type FormValues = z.infer<typeof schema>;
 
+type DialogMode = "view" | "edit";
+
 export function CategoriesPage() {
   const [open, setOpen] = useState(false);
-  const [editingCategory, setEditingCategory] = useState<CategoryResponse | null>(null);
+  const [dialogCategory, setDialogCategory] = useState<{ category: CategoryResponse; mode: DialogMode } | null>(null);
   const [editName, setEditName] = useState("");
 
   const { data: categories, isLoading } = useCategories();
@@ -69,17 +71,17 @@ export function CategoriesPage() {
     }
   }
 
-  function openEdit(category: CategoryResponse) {
-    setEditingCategory(category);
+  function openDialog(category: CategoryResponse, mode: DialogMode) {
+    setDialogCategory({ category, mode });
     setEditName(category.name);
   }
 
   async function handleUpdate() {
-    if (!editingCategory) return;
+    if (!dialogCategory) return;
     try {
-      await updateCategory.mutateAsync({ id: editingCategory.id, name: editName, color: editingCategory.color });
+      await updateCategory.mutateAsync({ id: dialogCategory.category.id, name: editName, color: dialogCategory.category.color });
       toast.success("Categoria atualizada com sucesso.");
-      setEditingCategory(null);
+      setDialogCategory(null);
     } catch {
       toast.error("Não foi possível atualizar a categoria.");
     }
@@ -138,21 +140,44 @@ export function CategoriesPage() {
         </Dialog>
       </div>
 
-      <Dialog open={!!editingCategory} onOpenChange={(isOpen) => !isOpen && setEditingCategory(null)}>
+      <Dialog open={!!dialogCategory} onOpenChange={(isOpen) => !isOpen && setDialogCategory(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Editar Categoria</DialogTitle>
+            <DialogTitle>{dialogCategory?.mode === "view" ? "Detalhes da Categoria" : "Editar Categoria"}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="edit-name">Nome</Label>
-              <Input id="edit-name" value={editName} onChange={(e) => setEditName(e.target.value)} />
+              <Input
+                id="edit-name"
+                value={editName}
+                onChange={(e) => setEditName(e.target.value)}
+                disabled={dialogCategory?.mode === "view"}
+              />
             </div>
-            <p className="text-xs text-muted-foreground">O tipo não pode ser alterado após a criação da categoria.</p>
+            <div className="space-y-2">
+              <Label htmlFor="view-category-type">Tipo</Label>
+              <LabeledSelect
+                id="view-category-type"
+                value={dialogCategory ? String(dialogCategory.category.type) : ""}
+                onValueChange={() => {}}
+                options={categoryTypeOptions}
+                disabled
+              />
+            </div>
+            {dialogCategory?.mode === "edit" && (
+              <p className="text-xs text-muted-foreground">O tipo não pode ser alterado após a criação da categoria.</p>
+            )}
             <DialogFooter>
-              <Button onClick={handleUpdate} disabled={updateCategory.isPending || !editName.trim()}>
-                {updateCategory.isPending ? "Salvando..." : "Salvar"}
-              </Button>
+              {dialogCategory?.mode === "view" ? (
+                <Button type="button" variant="outline" onClick={() => setDialogCategory(null)}>
+                  Fechar
+                </Button>
+              ) : (
+                <Button onClick={handleUpdate} disabled={updateCategory.isPending || !editName.trim()}>
+                  {updateCategory.isPending ? "Salvando..." : "Salvar"}
+                </Button>
+              )}
             </DialogFooter>
           </div>
         </DialogContent>
@@ -183,7 +208,8 @@ export function CategoriesPage() {
                     </TableCell>
                     <TableCell>
                       <RowActions
-                        onEdit={() => openEdit(category)}
+                        onView={() => openDialog(category, "view")}
+                        onEdit={() => openDialog(category, "edit")}
                         onDelete={() => handleDelete(category)}
                         deleteConfirmMessage={`Excluir a categoria "${category.name}"? Essa ação não pode ser desfeita.`}
                       />

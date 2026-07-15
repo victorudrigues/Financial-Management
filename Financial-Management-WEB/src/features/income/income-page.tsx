@@ -26,8 +26,11 @@ import { CurrencyInput } from "@/components/currency-input";
 import { useCreateIncome, useIncome } from "@/features/income/api";
 import { useAccounts } from "@/features/accounts/api";
 import { useCategories } from "@/features/categories/api";
+import { useCostCenters } from "@/features/cost-centers/api";
 import { TransactionActions } from "@/features/transactions/transaction-actions";
+import { TransactionDetailsDialog } from "@/features/transactions/transaction-details-dialog";
 import { PaymentMethod, PaymentMethodLabels, TransactionStatusLabels } from "@/types/enums";
+import { TransactionResponse } from "@/types/dtos";
 import { formatCurrency, formatDate, toIsoDate } from "@/lib/format";
 
 function firstDayOfMonth() {
@@ -51,12 +54,14 @@ const paymentMethodOptions = Object.entries(PaymentMethodLabels).map(([value, la
 
 export function IncomePage() {
   const [open, setOpen] = useState(false);
+  const [viewingTransaction, setViewingTransaction] = useState<TransactionResponse | null>(null);
   const from = toIsoDate(firstDayOfMonth());
   const to = toIsoDate(new Date());
 
   const { data: income, isLoading } = useIncome(from, to);
   const { data: accounts } = useAccounts();
   const { data: categories } = useCategories();
+  const { data: costCenters } = useCostCenters();
   const createIncome = useCreateIncome();
 
   const {
@@ -205,7 +210,7 @@ export function IncomePage() {
                       <Badge variant="outline">{TransactionStatusLabels[transaction.status]}</Badge>
                     </TableCell>
                     <TableCell>
-                      <TransactionActions transaction={transaction} />
+                      <TransactionActions transaction={transaction} onView={() => setViewingTransaction(transaction)} />
                     </TableCell>
                   </TableRow>
                 ))}
@@ -221,6 +226,14 @@ export function IncomePage() {
           )}
         </CardContent>
       </Card>
+
+      <TransactionDetailsDialog
+        transaction={viewingTransaction}
+        onClose={() => setViewingTransaction(null)}
+        accounts={accounts}
+        categories={categories}
+        costCenters={costCenters}
+      />
     </div>
   );
 }

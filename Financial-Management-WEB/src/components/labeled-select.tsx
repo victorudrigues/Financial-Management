@@ -15,13 +15,22 @@ interface LabeledSelectProps {
   placeholder?: string;
   id?: string;
   className?: string;
+  disabled?: boolean;
 }
 
-export function LabeledSelect({ value, onValueChange, options, placeholder, id, className }: LabeledSelectProps) {
+export function LabeledSelect({
+  value,
+  onValueChange,
+  options,
+  placeholder,
+  id,
+  className,
+  disabled,
+}: LabeledSelectProps) {
   const selectedLabel = options.find((option) => option.value === value)?.label;
 
   return (
-    <Select value={value || undefined} onValueChange={(next) => onValueChange(next ?? "")}>
+    <Select value={value || undefined} onValueChange={(next) => onValueChange(next ?? "")} disabled={disabled}>
       <SelectTrigger id={id} className={cn("w-full", className)}>
         <span
           data-slot="select-value"

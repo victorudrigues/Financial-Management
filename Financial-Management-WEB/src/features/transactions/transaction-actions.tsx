@@ -1,7 +1,7 @@
 "use client";
 
 import { toast } from "sonner";
-import { CheckCircle2, MoreHorizontal, RotateCcw, XCircle } from "lucide-react";
+import { CheckCircle2, Eye, MoreHorizontal, RotateCcw, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -13,17 +13,18 @@ import { useCancelTransaction, useConfirmTransaction, useReverseTransaction } fr
 import { TransactionResponse } from "@/types/dtos";
 import { TransactionStatus } from "@/types/enums";
 
-export function TransactionActions({ transaction }: { transaction: TransactionResponse }) {
+interface TransactionActionsProps {
+  transaction: TransactionResponse;
+  onView?: () => void;
+}
+
+export function TransactionActions({ transaction, onView }: TransactionActionsProps) {
   const confirmTransaction = useConfirmTransaction();
   const cancelTransaction = useCancelTransaction();
   const reverseTransaction = useReverseTransaction();
 
   const isPending = transaction.status === TransactionStatus.Pendente;
   const isSettled = transaction.status === TransactionStatus.Recebido || transaction.status === TransactionStatus.Pago;
-
-  if (!isPending && !isSettled) {
-    return null;
-  }
 
   async function handleConfirm() {
     try {
@@ -64,6 +65,11 @@ export function TransactionActions({ transaction }: { transaction: TransactionRe
         }
       />
       <DropdownMenuContent align="end">
+        {onView && (
+          <DropdownMenuItem onClick={onView}>
+            <Eye className="mr-2 h-4 w-4" /> Ver Detalhes
+          </DropdownMenuItem>
+        )}
         {isPending && (
           <>
             <DropdownMenuItem onClick={handleConfirm}>

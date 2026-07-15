@@ -31,9 +31,11 @@ const schema = z.object({
 
 type FormValues = z.infer<typeof schema>;
 
+type DialogMode = "view" | "edit";
+
 export function CostCentersPage() {
   const [open, setOpen] = useState(false);
-  const [editingCostCenter, setEditingCostCenter] = useState<CostCenterResponse | null>(null);
+  const [dialogState, setDialogState] = useState<{ costCenter: CostCenterResponse; mode: DialogMode } | null>(null);
   const [editName, setEditName] = useState("");
   const [editDescription, setEditDescription] = useState("");
 
@@ -60,18 +62,18 @@ export function CostCentersPage() {
     }
   }
 
-  function openEdit(costCenter: CostCenterResponse) {
-    setEditingCostCenter(costCenter);
+  function openDialog(costCenter: CostCenterResponse, mode: DialogMode) {
+    setDialogState({ costCenter, mode });
     setEditName(costCenter.name);
     setEditDescription(costCenter.description ?? "");
   }
 
   async function handleUpdate() {
-    if (!editingCostCenter) return;
+    if (!dialogState) return;
     try {
-      await updateCostCenter.mutateAsync({ id: editingCostCenter.id, name: editName, description: editDescription });
+      await updateCostCenter.mutateAsync({ id: dialogState.costCenter.id, name: editName, description: editDescription });
       toast.success("Centro de custo atualizado com sucesso.");
-      setEditingCostCenter(null);
+      setDialogState(null);
     } catch {
       toast.error("Não foi possível atualizar o centro de custo.");
     }
@@ -125,24 +127,40 @@ export function CostCentersPage() {
         </Dialog>
       </div>
 
-      <Dialog open={!!editingCostCenter} onOpenChange={(isOpen) => !isOpen && setEditingCostCenter(null)}>
+      <Dialog open={!!dialogState} onOpenChange={(isOpen) => !isOpen && setDialogState(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Editar Centro de Custo</DialogTitle>
+            <DialogTitle>{dialogState?.mode === "view" ? "Detalhes do Centro de Custo" : "Editar Centro de Custo"}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="edit-name">Nome</Label>
-              <Input id="edit-name" value={editName} onChange={(e) => setEditName(e.target.value)} />
+              <Input
+                id="edit-name"
+                value={editName}
+                onChange={(e) => setEditName(e.target.value)}
+                disabled={dialogState?.mode === "view"}
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="edit-description">Descrição</Label>
-              <Input id="edit-description" value={editDescription} onChange={(e) => setEditDescription(e.target.value)} />
+              <Input
+                id="edit-description"
+                value={editDescription}
+                onChange={(e) => setEditDescription(e.target.value)}
+                disabled={dialogState?.mode === "view"}
+              />
             </div>
             <DialogFooter>
-              <Button onClick={handleUpdate} disabled={updateCostCenter.isPending || !editName.trim()}>
-                {updateCostCenter.isPending ? "Salvando..." : "Salvar"}
-              </Button>
+              {dialogState?.mode === "view" ? (
+                <Button type="button" variant="outline" onClick={() => setDialogState(null)}>
+                  Fechar
+                </Button>
+              ) : (
+                <Button onClick={handleUpdate} disabled={updateCostCenter.isPending || !editName.trim()}>
+                  {updateCostCenter.isPending ? "Salvando..." : "Salvar"}
+                </Button>
+              )}
             </DialogFooter>
           </div>
         </DialogContent>
@@ -171,7 +189,8 @@ export function CostCentersPage() {
                     <TableCell>{costCenter.description ?? "-"}</TableCell>
                     <TableCell>
                       <RowActions
-                        onEdit={() => openEdit(costCenter)}
+                        onView={() => openDialog(costCenter, "view")}
+                        onEdit={() => openDialog(costCenter, "edit")}
                         onDelete={() => handleDelete(costCenter)}
                         deleteConfirmMessage={`Excluir o centro de custo "${costCenter.name}"? Essa ação não pode ser desfeita.`}
                       />

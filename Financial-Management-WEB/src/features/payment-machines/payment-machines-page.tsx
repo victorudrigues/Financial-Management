@@ -56,51 +56,56 @@ function PaymentMachineFormFields({
   register,
   errors,
   idPrefix,
+  disabled,
 }: {
   register: UseFormRegister<FormValues>;
   errors: FieldErrors<FormValues>;
   idPrefix: string;
+  disabled?: boolean;
 }) {
   return (
     <>
       <div className="space-y-2">
         <Label htmlFor={`${idPrefix}-name`}>Nome</Label>
-        <Input id={`${idPrefix}-name`} {...register("name")} />
+        <Input id={`${idPrefix}-name`} disabled={disabled} {...register("name")} />
         {errors.name && <p className="text-sm text-destructive">{errors.name.message}</p>}
       </div>
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label htmlFor={`${idPrefix}-debitFeePercent`}>Taxa Débito (%)</Label>
-          <Input id={`${idPrefix}-debitFeePercent`} type="number" step="0.01" {...register("debitFeePercent", { valueAsNumber: true })} />
+          <Input id={`${idPrefix}-debitFeePercent`} type="number" step="0.01" disabled={disabled} {...register("debitFeePercent", { valueAsNumber: true })} />
         </div>
         <div className="space-y-2">
           <Label htmlFor={`${idPrefix}-creditFeePercent`}>Taxa Crédito (%)</Label>
-          <Input id={`${idPrefix}-creditFeePercent`} type="number" step="0.01" {...register("creditFeePercent", { valueAsNumber: true })} />
+          <Input id={`${idPrefix}-creditFeePercent`} type="number" step="0.01" disabled={disabled} {...register("creditFeePercent", { valueAsNumber: true })} />
         </div>
         <div className="space-y-2">
           <Label htmlFor={`${idPrefix}-installmentFeePercent`}>Taxa Parcelado (%)</Label>
-          <Input id={`${idPrefix}-installmentFeePercent`} type="number" step="0.01" {...register("installmentFeePercent", { valueAsNumber: true })} />
+          <Input id={`${idPrefix}-installmentFeePercent`} type="number" step="0.01" disabled={disabled} {...register("installmentFeePercent", { valueAsNumber: true })} />
         </div>
         <div className="space-y-2">
           <Label htmlFor={`${idPrefix}-pixFeePercent`}>Taxa PIX (%)</Label>
-          <Input id={`${idPrefix}-pixFeePercent`} type="number" step="0.01" {...register("pixFeePercent", { valueAsNumber: true })} />
+          <Input id={`${idPrefix}-pixFeePercent`} type="number" step="0.01" disabled={disabled} {...register("pixFeePercent", { valueAsNumber: true })} />
         </div>
       </div>
       <div className="space-y-2">
         <Label htmlFor={`${idPrefix}-settlementDays`}>Prazo de Recebimento (dias)</Label>
-        <Input id={`${idPrefix}-settlementDays`} type="number" {...register("settlementDays", { valueAsNumber: true })} />
+        <Input id={`${idPrefix}-settlementDays`} type="number" disabled={disabled} {...register("settlementDays", { valueAsNumber: true })} />
       </div>
       <div className="flex items-center gap-2">
-        <input id={`${idPrefix}-allowsAnticipation`} type="checkbox" className="h-4 w-4" {...register("allowsAnticipation")} />
+        <input id={`${idPrefix}-allowsAnticipation`} type="checkbox" className="h-4 w-4" disabled={disabled} {...register("allowsAnticipation")} />
         <Label htmlFor={`${idPrefix}-allowsAnticipation`}>Permite antecipação</Label>
       </div>
     </>
   );
 }
 
+type DialogMode = "view" | "edit";
+
 export function PaymentMachinesPage() {
   const [open, setOpen] = useState(false);
   const [editingMachine, setEditingMachine] = useState<PaymentMachineResponse | null>(null);
+  const [dialogMode, setDialogMode] = useState<DialogMode>("edit");
 
   const { data: machines, isLoading } = usePaymentMachines();
   const createMachine = useCreatePaymentMachine();
@@ -189,14 +194,25 @@ export function PaymentMachinesPage() {
       <Dialog open={!!editingMachine} onOpenChange={(isOpen) => !isOpen && setEditingMachine(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Editar Maquineta</DialogTitle>
+            <DialogTitle>{dialogMode === "view" ? "Detalhes da Maquineta" : "Editar Maquineta"}</DialogTitle>
           </DialogHeader>
           <form onSubmit={editForm.handleSubmit(onUpdate)} className="space-y-4">
-            <PaymentMachineFormFields register={editForm.register} errors={editForm.formState.errors} idPrefix="edit" />
+            <PaymentMachineFormFields
+              register={editForm.register}
+              errors={editForm.formState.errors}
+              idPrefix="edit"
+              disabled={dialogMode === "view"}
+            />
             <DialogFooter>
-              <Button type="submit" disabled={updateMachine.isPending}>
-                {updateMachine.isPending ? "Salvando..." : "Salvar"}
-              </Button>
+              {dialogMode === "view" ? (
+                <Button type="button" variant="outline" onClick={() => setEditingMachine(null)}>
+                  Fechar
+                </Button>
+              ) : (
+                <Button type="submit" disabled={updateMachine.isPending}>
+                  {updateMachine.isPending ? "Salvando..." : "Salvar"}
+                </Button>
+              )}
             </DialogFooter>
           </form>
         </DialogContent>
@@ -233,7 +249,14 @@ export function PaymentMachinesPage() {
                     <TableCell>{machine.settlementDays} dias</TableCell>
                     <TableCell>
                       <RowActions
-                        onEdit={() => setEditingMachine(machine)}
+                        onView={() => {
+                          setDialogMode("view");
+                          setEditingMachine(machine);
+                        }}
+                        onEdit={() => {
+                          setDialogMode("edit");
+                          setEditingMachine(machine);
+                        }}
                         onDelete={() => handleDelete(machine)}
                         deleteConfirmMessage={`Excluir a maquineta "${machine.name}"? Essa ação não pode ser desfeita.`}
                       />

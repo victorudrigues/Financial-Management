@@ -1,6 +1,6 @@
 "use client";
 
-import { MoreHorizontal, Pencil, Trash2 } from "lucide-react";
+import { Eye, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -10,13 +10,14 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 interface RowActionsProps {
+  onView?: () => void;
   onEdit?: () => void;
   onDelete?: () => void;
   deleteConfirmMessage?: string;
   extraItems?: React.ReactNode;
 }
 
-export function RowActions({ onEdit, onDelete, deleteConfirmMessage, extraItems }: RowActionsProps) {
+export function RowActions({ onView, onEdit, onDelete, deleteConfirmMessage, extraItems }: RowActionsProps) {
   function handleDelete() {
     if (!onDelete) return;
     if (window.confirm(deleteConfirmMessage ?? "Tem certeza que deseja excluir este item?")) {
@@ -34,6 +35,11 @@ export function RowActions({ onEdit, onDelete, deleteConfirmMessage, extraItems 
         }
       />
       <DropdownMenuContent align="end">
+        {onView && (
+          <DropdownMenuItem onClick={onView}>
+            <Eye className="mr-2 h-4 w-4" /> Ver Detalhes
+          </DropdownMenuItem>
+        )}
         {extraItems}
         {onEdit && (
           <DropdownMenuItem onClick={onEdit}>

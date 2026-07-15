@@ -39,9 +39,11 @@ const schema = z.object({
 
 type FormValues = z.infer<typeof schema>;
 
+type DialogMode = "view" | "edit";
+
 export function AccountsPage() {
   const [open, setOpen] = useState(false);
-  const [editingAccount, setEditingAccount] = useState<AccountResponse | null>(null);
+  const [dialogAccount, setDialogAccount] = useState<{ account: AccountResponse; mode: DialogMode } | null>(null);
   const [editName, setEditName] = useState("");
 
   const { data: accounts, isLoading } = useAccounts();
@@ -72,17 +74,17 @@ export function AccountsPage() {
     }
   }
 
-  function openEdit(account: AccountResponse) {
-    setEditingAccount(account);
+  function openDialog(account: AccountResponse, mode: DialogMode) {
+    setDialogAccount({ account, mode });
     setEditName(account.name);
   }
 
   async function handleUpdate() {
-    if (!editingAccount) return;
+    if (!dialogAccount) return;
     try {
-      await updateAccount.mutateAsync({ id: editingAccount.id, name: editName });
+      await updateAccount.mutateAsync({ id: dialogAccount.account.id, name: editName });
       toast.success("Conta atualizada com sucesso.");
-      setEditingAccount(null);
+      setDialogAccount(null);
     } catch {
       toast.error("Não foi possível atualizar a conta.");
     }
@@ -96,6 +98,8 @@ export function AccountsPage() {
       toast.error("Não foi possível excluir a conta. Verifique se não há movimentações vinculadas.");
     }
   }
+
+  const isViewMode = dialogAccount?.mode === "view";
 
   return (
     <div className="space-y-6">
@@ -149,23 +153,51 @@ export function AccountsPage() {
         </Dialog>
       </div>
 
-      <Dialog open={!!editingAccount} onOpenChange={(isOpen) => !isOpen && setEditingAccount(null)}>
+      <Dialog open={!!dialogAccount} onOpenChange={(isOpen) => !isOpen && setDialogAccount(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Editar Conta</DialogTitle>
+            <DialogTitle>{isViewMode ? "Detalhes da Conta" : "Editar Conta"}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="edit-name">Nome</Label>
-              <Input id="edit-name" value={editName} onChange={(e) => setEditName(e.target.value)} />
+              <Input id="edit-name" value={editName} onChange={(e) => setEditName(e.target.value)} disabled={isViewMode} />
             </div>
-            <p className="text-xs text-muted-foreground">
-              Tipo e saldo inicial não podem ser alterados após a criação da conta.
-            </p>
+            <div className="space-y-2">
+              <Label htmlFor="view-account-type">Tipo</Label>
+              <LabeledSelect
+                id="view-account-type"
+                value={dialogAccount ? String(dialogAccount.account.type) : ""}
+                onValueChange={() => {}}
+                options={accountTypeOptions}
+                disabled
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Saldo Inicial</Label>
+                <CurrencyInput value={dialogAccount?.account.initialBalance ?? 0} onChange={() => {}} disabled />
+              </div>
+              <div className="space-y-2">
+                <Label>Saldo Atual</Label>
+                <CurrencyInput value={dialogAccount?.account.currentBalance ?? 0} onChange={() => {}} disabled />
+              </div>
+            </div>
+            {!isViewMode && (
+              <p className="text-xs text-muted-foreground">
+                Tipo e saldo inicial não podem ser alterados após a criação da conta.
+              </p>
+            )}
             <DialogFooter>
-              <Button onClick={handleUpdate} disabled={updateAccount.isPending || !editName.trim()}>
-                {updateAccount.isPending ? "Salvando..." : "Salvar"}
-              </Button>
+              {isViewMode ? (
+                <Button type="button" variant="outline" onClick={() => setDialogAccount(null)}>
+                  Fechar
+                </Button>
+              ) : (
+                <Button onClick={handleUpdate} disabled={updateAccount.isPending || !editName.trim()}>
+                  {updateAccount.isPending ? "Salvando..." : "Salvar"}
+                </Button>
+              )}
             </DialogFooter>
           </div>
         </DialogContent>
@@ -202,7 +234,8 @@ export function AccountsPage() {
                     </TableCell>
                     <TableCell>
                       <RowActions
-                        onEdit={() => openEdit(account)}
+                        onView={() => openDialog(account, "view")}
+                        onEdit={() => openDialog(account, "edit")}
                         onDelete={() => handleDelete(account)}
                         deleteConfirmMessage={`Excluir a conta "${account.name}"? Essa ação não pode ser desfeita.`}
                       />

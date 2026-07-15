@@ -1,12 +1,16 @@
 "use client";
 
 import { useState } from "react";
+import { FileSpreadsheet, FileText } from "lucide-react";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { BreakdownList } from "@/components/breakdown-list";
 import { PeriodFilter } from "@/components/period-filter";
 import { StatCard } from "@/components/stat-card";
 import { useCategoryBreakdown, useCostCenterBreakdown } from "@/features/cashflow/api";
+import { downloadCashFlowReport } from "@/features/reports/api";
 import { formatCurrency } from "@/lib/format";
 import { computePreset, toApiDateTime } from "@/lib/period";
 
@@ -14,6 +18,7 @@ export function ReportsPage() {
   const initialRange = computePreset("month");
   const [from, setFrom] = useState(initialRange.from);
   const [to, setTo] = useState(initialRange.to);
+  const [downloadingFormat, setDownloadingFormat] = useState<"Pdf" | "Excel" | null>(null);
 
   const fromParam = toApiDateTime(from);
   const toParam = toApiDateTime(to);
@@ -24,11 +29,34 @@ export function ReportsPage() {
   const totalByCategory = (categoryBreakdown ?? []).reduce((sum, item) => sum + item.totalAmount, 0);
   const totalByCostCenter = (costCenterBreakdown ?? []).reduce((sum, item) => sum + item.totalAmount, 0);
 
+  async function handleDownload(format: "Pdf" | "Excel") {
+    setDownloadingFormat(format);
+    try {
+      await downloadCashFlowReport(fromParam, toParam, format);
+    } catch {
+      toast.error("Não foi possível gerar o relatório.");
+    } finally {
+      setDownloadingFormat(null);
+    }
+  }
+
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Relatórios</h1>
-        <p className="text-muted-foreground">Movimentações conciliadas agrupadas por categoria e centro de custo.</p>
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">Relatórios</h1>
+          <p className="text-muted-foreground">Movimentações conciliadas agrupadas por categoria e centro de custo.</p>
+        </div>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => handleDownload("Pdf")} disabled={downloadingFormat !== null}>
+            <FileText className="mr-2 h-4 w-4" />
+            {downloadingFormat === "Pdf" ? "Gerando..." : "Baixar PDF"}
+          </Button>
+          <Button variant="outline" onClick={() => handleDownload("Excel")} disabled={downloadingFormat !== null}>
+            <FileSpreadsheet className="mr-2 h-4 w-4" />
+            {downloadingFormat === "Excel" ? "Gerando..." : "Baixar Excel"}
+          </Button>
+        </div>
       </div>
 
       <PeriodFilter from={from} to={to} onChange={(newFrom, newTo) => { setFrom(newFrom); setTo(newTo); }} />

@@ -3,7 +3,7 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { apiClient, TOKEN_STORAGE_KEY } from "@/lib/api-client";
-import { LoginResponse } from "@/types/dtos";
+import { CheckEmailResponse, LoginResponse, RegisterResponse } from "@/types/dtos";
 
 interface AuthUser {
   userId: string;
@@ -17,6 +17,8 @@ interface AuthContextValue {
   isLoading: boolean;
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<void>;
+  register: (fullName: string, email: string, password: string) => Promise<void>;
+  checkEmail: (email: string) => Promise<boolean>;
   logout: () => void;
 }
 
@@ -38,9 +40,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setIsLoading(false);
   }, []);
 
-  async function login(email: string, password: string) {
-    const { data } = await apiClient.post<LoginResponse>("/api/auth/login", { email, password });
-
+  function persistSession(data: LoginResponse | RegisterResponse) {
     localStorage.setItem(TOKEN_STORAGE_KEY, data.accessToken);
     const authUser: AuthUser = {
       userId: data.userId,
@@ -50,7 +50,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
     localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(authUser));
     setUser(authUser);
+  }
+
+  async function login(email: string, password: string) {
+    const { data } = await apiClient.post<LoginResponse>("/api/auth/login", { email, password });
+    persistSession(data);
     router.push("/dashboard");
+  }
+
+  async function register(fullName: string, email: string, password: string) {
+    const { data } = await apiClient.post<RegisterResponse>("/api/auth/register", {
+      fullName,
+      email,
+      password,
+      role: "Administrador",
+    });
+    persistSession(data);
+    router.push("/dashboard");
+  }
+
+  async function checkEmail(email: string) {
+    const { data } = await apiClient.get<CheckEmailResponse>("/api/auth/check-email", { params: { email } });
+    return data.exists;
   }
 
   function logout() {
@@ -61,7 +82,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, isAuthenticated: !!user, login, logout }}>
+    <AuthContext.Provider value={{ user, isLoading, isAuthenticated: !!user, login, register, checkEmail, logout }}>
       {children}
     </AuthContext.Provider>
   );

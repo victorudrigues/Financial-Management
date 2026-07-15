@@ -128,3 +128,17 @@ export interface LoginResponse {
   fullName: string;
   roles: string[];
 }
+
+export interface RegisterResponse {
+  accessToken: string;
+  expiresAt: string;
+  refreshToken: string;
+  userId: string;
+  email: string;
+  fullName: string;
+  roles: string[];
+}
+
+export interface CheckEmailResponse {
+  exists: boolean;
+}

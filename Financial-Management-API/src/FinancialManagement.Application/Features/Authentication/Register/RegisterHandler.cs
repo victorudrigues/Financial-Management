@@ -6,10 +6,12 @@ namespace FinancialManagement.Application.Features.Authentication.Register;
 public class RegisterHandler
 {
     private readonly IIdentityService _identityService;
+    private readonly ITokenService _tokenService;
 
-    public RegisterHandler(IIdentityService identityService)
+    public RegisterHandler(IIdentityService identityService, ITokenService tokenService)
     {
         _identityService = identityService;
+        _tokenService = tokenService;
     }
 
     public async Task<Result<RegisterResponse>> HandleAsync(RegisterRequest request, CancellationToken cancellationToken)
@@ -20,6 +22,17 @@ public class RegisterHandler
             return Result.Failure<RegisterResponse>(result.Errors);
 
         var user = result.Value;
-        return Result.Success(new RegisterResponse(user.UserId, user.Email, user.FullName, user.Roles));
+        var token = _tokenService.GenerateToken(user.UserId, user.Email, user.Roles);
+
+        await _identityService.SaveRefreshTokenAsync(user.UserId, token.RefreshToken, token.ExpiresAt.AddDays(7));
+
+        return Result.Success(new RegisterResponse(
+            user.UserId,
+            user.Email,
+            user.FullName,
+            user.Roles,
+            token.AccessToken,
+            token.ExpiresAt,
+            token.RefreshToken));
     }
 }

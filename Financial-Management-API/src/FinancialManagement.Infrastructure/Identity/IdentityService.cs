@@ -75,4 +75,10 @@ public class IdentityService : IIdentityService
         user.RefreshTokenExpiresAt = expiresAt;
         await _userManager.UpdateAsync(user);
     }
+
+    public async Task<bool> EmailExistsAsync(string email)
+    {
+        var user = await _userManager.FindByEmailAsync(email);
+        return user is not null;
+    }
 }

@@ -10,4 +10,5 @@ public interface IIdentityService
     Task<Result<IdentityAuthResult>> ValidateCredentialsAsync(string email, string password);
     Task<Result<IdentityAuthResult>> GetByRefreshTokenAsync(string refreshToken);
     Task SaveRefreshTokenAsync(Guid userId, string refreshToken, DateTime expiresAt);
+    Task<bool> EmailExistsAsync(string email);
 }

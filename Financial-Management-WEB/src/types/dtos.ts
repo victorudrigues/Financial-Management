@@ -80,6 +80,22 @@ export interface CashFlowSummaryResponse {
   dailyBreakdown: DailyCashFlow[];
 }
 
+export interface CategoryBreakdownItem {
+  categoryId: string;
+  categoryName: string;
+  categoryType: CategoryType;
+  color?: string | null;
+  totalAmount: number;
+  transactionCount: number;
+}
+
+export interface CostCenterBreakdownItem {
+  costCenterId?: string | null;
+  costCenterName: string;
+  totalAmount: number;
+  transactionCount: number;
+}
+
 export interface DashboardOverviewResponse {
   currentBalance: number;
   todayIncome: number;

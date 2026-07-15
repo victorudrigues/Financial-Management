@@ -2,46 +2,38 @@
 
 import { useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { StatCard } from "@/components/stat-card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useCashFlowSummary } from "@/features/cashflow/api";
+import { BreakdownList } from "@/components/breakdown-list";
+import { PeriodFilter } from "@/components/period-filter";
+import { useCashFlowSummary, useCategoryBreakdown, useCostCenterBreakdown } from "@/features/cashflow/api";
 import { CashFlowChart } from "@/features/cashflow/cashflow-chart";
-import { formatCurrency, formatDate, toIsoDate } from "@/lib/format";
-
-function firstDayOfMonth() {
-  const now = new Date();
-  return new Date(now.getFullYear(), now.getMonth(), 1);
-}
+import { formatCurrency, formatDate } from "@/lib/format";
+import { computePreset, toApiDateTime } from "@/lib/period";
 
 export function CashFlowPage() {
-  const [from, setFrom] = useState(toIsoDate(firstDayOfMonth()));
-  const [to, setTo] = useState(toIsoDate(new Date()));
+  const initialRange = computePreset("month");
+  const [from, setFrom] = useState(initialRange.from);
+  const [to, setTo] = useState(initialRange.to);
 
-  const { data, isLoading } = useCashFlowSummary(from, to);
+  const fromParam = toApiDateTime(from);
+  const toParam = toApiDateTime(to);
+
+  const { data, isLoading } = useCashFlowSummary(fromParam, toParam);
+  const { data: categoryBreakdown, isLoading: isLoadingCategories } = useCategoryBreakdown(fromParam, toParam);
+  const { data: costCenterBreakdown, isLoading: isLoadingCostCenters } = useCostCenterBreakdown(fromParam, toParam);
 
   const chartData = useMemo(() => data?.dailyBreakdown ?? [], [data]);
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Fluxo de Caixa</h1>
-          <p className="text-muted-foreground">Entradas, saídas e saldo no período selecionado.</p>
-        </div>
-        <div className="flex items-end gap-3">
-          <div className="space-y-1">
-            <Label htmlFor="from">De</Label>
-            <Input id="from" type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
-          </div>
-          <div className="space-y-1">
-            <Label htmlFor="to">Até</Label>
-            <Input id="to" type="date" value={to} onChange={(e) => setTo(e.target.value)} />
-          </div>
-        </div>
+      <div>
+        <h1 className="text-2xl font-semibold tracking-tight">Fluxo de Caixa</h1>
+        <p className="text-muted-foreground">Entradas, saídas e saldo no período selecionado.</p>
       </div>
+
+      <PeriodFilter from={from} to={to} onChange={(newFrom, newTo) => { setFrom(newFrom); setTo(newTo); }} />
 
       {isLoading || !data ? (
         <Skeleton className="h-96 w-full" />
@@ -66,6 +58,49 @@ export function CashFlowPage() {
               )}
             </CardContent>
           </Card>
+
+          <div className="grid gap-4 lg:grid-cols-2">
+            <Card>
+              <CardHeader>
+                <CardTitle>Por Categoria</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {isLoadingCategories ? (
+                  <Skeleton className="h-40 w-full" />
+                ) : (
+                  <BreakdownList
+                    emptyLabel="Nenhuma movimentação categorizada no período."
+                    entries={(categoryBreakdown ?? []).map((item) => ({
+                      key: item.categoryId,
+                      name: item.categoryName,
+                      amount: item.totalAmount,
+                      color: item.color,
+                    }))}
+                  />
+                )}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Por Centro de Custo</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {isLoadingCostCenters ? (
+                  <Skeleton className="h-40 w-full" />
+                ) : (
+                  <BreakdownList
+                    emptyLabel="Nenhuma movimentação com centro de custo no período."
+                    entries={(costCenterBreakdown ?? []).map((item) => ({
+                      key: item.costCenterId ?? "unassigned",
+                      name: item.costCenterName,
+                      amount: item.totalAmount,
+                    }))}
+                  />
+                )}
+              </CardContent>
+            </Card>
+          </div>
 
           <Card>
             <CardHeader>

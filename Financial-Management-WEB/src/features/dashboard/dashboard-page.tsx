@@ -3,12 +3,23 @@
 import { motion } from "framer-motion";
 import { Wallet, TrendingUp, TrendingDown, LineChart, Percent, PiggyBank } from "lucide-react";
 import { StatCard } from "@/components/stat-card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { BreakdownList } from "@/components/breakdown-list";
 import { useDashboardOverview } from "@/features/dashboard/api";
+import { useCategoryBreakdown, useCostCenterBreakdown } from "@/features/cashflow/api";
 import { formatCurrency, formatPercent } from "@/lib/format";
+import { computePreset, toApiDateTime } from "@/lib/period";
 
 export function DashboardPage() {
   const { data, isLoading } = useDashboardOverview();
+
+  const currentMonth = computePreset("month");
+  const fromParam = toApiDateTime(currentMonth.from);
+  const toParam = toApiDateTime(currentMonth.to);
+
+  const { data: categoryBreakdown, isLoading: isLoadingCategories } = useCategoryBreakdown(fromParam, toParam);
+  const { data: costCenterBreakdown, isLoading: isLoadingCostCenters } = useCostCenterBreakdown(fromParam, toParam);
 
   if (isLoading || !data) {
     return (
@@ -48,6 +59,49 @@ export function DashboardPage() {
             <StatCard {...card} />
           </motion.div>
         ))}
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle>Top Categorias (mês atual)</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {isLoadingCategories ? (
+              <Skeleton className="h-40 w-full" />
+            ) : (
+              <BreakdownList
+                emptyLabel="Nenhuma movimentação categorizada neste mês."
+                entries={(categoryBreakdown ?? []).slice(0, 5).map((item) => ({
+                  key: item.categoryId,
+                  name: item.categoryName,
+                  amount: item.totalAmount,
+                  color: item.color,
+                }))}
+              />
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Por Centro de Custo (mês atual)</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {isLoadingCostCenters ? (
+              <Skeleton className="h-40 w-full" />
+            ) : (
+              <BreakdownList
+                emptyLabel="Nenhuma movimentação com centro de custo neste mês."
+                entries={(costCenterBreakdown ?? []).slice(0, 5).map((item) => ({
+                  key: item.costCenterId ?? "unassigned",
+                  name: item.costCenterName,
+                  amount: item.totalAmount,
+                }))}
+              />
+            )}
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

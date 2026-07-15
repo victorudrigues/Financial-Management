@@ -1,5 +1,5 @@
-import { ComingSoon } from "@/components/coming-soon";
+import { ReportsPage } from "@/features/reports/reports-page";
 
 export default function Page() {
-  return <ComingSoon title="Relatórios" description="Exportação de relatórios em PDF, Excel e CSV." />;
+  return <ReportsPage />;
 }

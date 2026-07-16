@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Dialog,
@@ -27,6 +27,7 @@ import { useCreateIncome, useIncome } from "@/features/income/api";
 import { useAccounts } from "@/features/accounts/api";
 import { useCategories } from "@/features/categories/api";
 import { useCostCenters } from "@/features/cost-centers/api";
+import { usePaymentMachines } from "@/features/payment-machines/api";
 import { TransactionActions } from "@/features/transactions/transaction-actions";
 import { TransactionDetailsDialog } from "@/features/transactions/transaction-details-dialog";
 import { PaymentMethod, PaymentMethodLabels, TransactionStatusLabels } from "@/types/enums";
@@ -46,6 +47,8 @@ const schema = z.object({
   competenceDate: z.string().min(1, "Informe a data."),
   paymentMethod: z.number().int(),
   clientName: z.string().optional(),
+  paymentMachineId: z.string().optional(),
+  installments: z.number().int().min(1).optional(),
 });
 
 type FormValues = z.infer<typeof schema>;
@@ -62,6 +65,7 @@ export function IncomePage() {
   const { data: accounts } = useAccounts();
   const { data: categories } = useCategories();
   const { data: costCenters } = useCostCenters();
+  const { data: paymentMachines } = usePaymentMachines();
   const createIncome = useCreateIncome();
 
   const {
@@ -81,16 +85,30 @@ export function IncomePage() {
       competenceDate: toIsoDate(new Date()),
       paymentMethod: PaymentMethod.Pix,
       clientName: "",
+      paymentMachineId: "",
+      installments: 1,
     },
   });
 
   const incomeCategories = categories?.filter((c) => c.type === 1) ?? [];
   const accountOptions = accounts?.map((account) => ({ value: account.id, label: account.name })) ?? [];
   const categoryOptions = incomeCategories.map((category) => ({ value: category.id, label: category.name }));
+  const paymentMachineOptions =
+    paymentMachines?.filter((m) => m.isActive).map((machine) => ({ value: machine.id, label: machine.name })) ?? [];
+
+  const totalIncome = income?.reduce((sum, transaction) => sum + transaction.amount, 0) ?? 0;
+
+  const selectedPaymentMethod = watch("paymentMethod");
+  const showMachinePicker = selectedPaymentMethod === PaymentMethod.Credito || selectedPaymentMethod === PaymentMethod.Debito;
+  const showInstallments = selectedPaymentMethod === PaymentMethod.Credito && !!watch("paymentMachineId");
 
   async function onSubmit(values: FormValues) {
     try {
-      await createIncome.mutateAsync(values);
+      await createIncome.mutateAsync({
+        ...values,
+        paymentMachineId: showMachinePicker && values.paymentMachineId ? values.paymentMachineId : null,
+        installments: showInstallments ? values.installments : null,
+      });
       toast.success("Receita registrada com sucesso.");
       reset();
       setOpen(false);
@@ -162,10 +180,42 @@ export function IncomePage() {
                 <LabeledSelect
                   id="income-payment-method"
                   value={String(watch("paymentMethod"))}
-                  onValueChange={(value) => setValue("paymentMethod", Number(value))}
+                  onValueChange={(value) => {
+                    setValue("paymentMethod", Number(value));
+                    setValue("paymentMachineId", "");
+                    setValue("installments", 1);
+                  }}
                   options={paymentMethodOptions}
                 />
               </div>
+              {showMachinePicker && (
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="income-payment-machine">Máquininha</Label>
+                    <LabeledSelect
+                      id="income-payment-machine"
+                      value={watch("paymentMachineId") ?? ""}
+                      onValueChange={(value) => {
+                        setValue("paymentMachineId", value);
+                        setValue("installments", 1);
+                      }}
+                      options={paymentMachineOptions}
+                      placeholder="Sem máquininha"
+                    />
+                  </div>
+                  {showInstallments && (
+                    <div className="space-y-2">
+                      <Label htmlFor="installments">Parcelas</Label>
+                      <Input
+                        id="installments"
+                        type="number"
+                        min={1}
+                        {...register("installments", { valueAsNumber: true })}
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
               <div className="space-y-2">
                 <Label htmlFor="clientName">Cliente (opcional)</Label>
                 <Input id="clientName" {...register("clientName")} />
@@ -222,6 +272,17 @@ export function IncomePage() {
                   </TableRow>
                 )}
               </TableBody>
+              <TableFooter>
+                <TableRow>
+                  <TableCell colSpan={2} className="font-semibold">
+                    Total
+                  </TableCell>
+                  <TableCell className="font-semibold text-emerald-600 dark:text-emerald-400">
+                    {formatCurrency(totalIncome)}
+                  </TableCell>
+                  <TableCell colSpan={2} />
+                </TableRow>
+              </TableFooter>
             </Table>
           )}
         </CardContent>

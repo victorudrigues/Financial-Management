@@ -48,15 +48,19 @@ public class CreateIncomeHandler
 
             if (fee.FeeAmount > 0)
             {
+                var feeCategory = await GetOrCreateFeeCategoryAsync(cancellationToken);
+
                 var feeExpense = Transaction.CreateExpense(
-                    $"Taxa da maquineta {machine.Name} - {income.Description}",
+                    $"Taxa máquininha - {machine.Name}",
                     fee.FeeAmount,
                     request.AccountId,
-                    request.CategoryId,
+                    feeCategory.Id,
                     request.CompetenceDate,
                     request.PaymentMethod,
                     Domain.Enums.ExpenseNature.Variable,
-                    notes: "Gerado automaticamente a partir da taxa de maquineta.");
+                    notes: $"Gerado automaticamente a partir da receita \"{income.Description}\".");
+
+                feeExpense.Confirm(request.CompetenceDate);
 
                 await _unitOfWork.Transactions.AddAsync(feeExpense, cancellationToken);
                 income.LinkFeeTransaction(feeExpense.Id);
@@ -66,5 +70,22 @@ public class CreateIncomeHandler
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         return Result.Success(TransactionMapper.ToResponse(income));
+    }
+
+    private const string FeeCategoryName = "Taxas e Tarifas";
+
+    private async Task<Category> GetOrCreateFeeCategoryAsync(CancellationToken cancellationToken)
+    {
+        var categories = await _unitOfWork.Categories.GetAllAsync(cancellationToken);
+        var existing = categories.FirstOrDefault(
+            c => c.Type == Domain.Enums.CategoryType.Expense && c.Name == FeeCategoryName);
+
+        if (existing is not null)
+            return existing;
+
+        var category = new Category(FeeCategoryName, Domain.Enums.CategoryType.Expense);
+        await _unitOfWork.Categories.AddAsync(category, cancellationToken);
+
+        return category;
     }
 }

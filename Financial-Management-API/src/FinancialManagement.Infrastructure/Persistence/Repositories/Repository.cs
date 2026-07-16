@@ -15,16 +15,16 @@ public class Repository<T> : IRepository<T> where T : BaseEntity
         Set = context.Set<T>();
     }
 
-    public Task<T?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default) =>
+    public virtual Task<T?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default) =>
         Set.FirstOrDefaultAsync(e => e.Id == id, cancellationToken);
 
-    public Task<List<T>> GetAllAsync(CancellationToken cancellationToken = default) =>
+    public virtual Task<List<T>> GetAllAsync(CancellationToken cancellationToken = default) =>
         Set.AsNoTracking().ToListAsync(cancellationToken);
 
     public async Task AddAsync(T entity, CancellationToken cancellationToken = default) =>
         await Set.AddAsync(entity, cancellationToken);
 
-    public void Update(T entity) => Set.Update(entity);
+    public virtual void Update(T entity) => Set.Update(entity);
 
     public void Remove(T entity) => Set.Remove(entity);
 }

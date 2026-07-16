@@ -30,7 +30,7 @@ export function LabeledSelect({
   const selectedLabel = options.find((option) => option.value === value)?.label;
 
   return (
-    <Select value={value || undefined} onValueChange={(next) => onValueChange(next ?? "")} disabled={disabled}>
+    <Select value={value} onValueChange={(next) => onValueChange(next ?? "")} disabled={disabled}>
       <SelectTrigger id={id} className={cn("w-full", className)}>
         <span
           data-slot="select-value"

@@ -19,6 +19,9 @@ public class DeletePaymentMachineHandler
         if (machine is null)
             return Result.Failure("Maquineta não encontrada.");
 
+        if (machine.IsActive)
+            return Result.Failure("Desative a maquineta antes de excluí-la.");
+
         _unitOfWork.PaymentMachines.Remove(machine);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 

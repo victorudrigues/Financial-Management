@@ -3,6 +3,7 @@ using FinancialManagement.Application.Features.PaymentMachines.CalculateFee;
 using FinancialManagement.Application.Features.PaymentMachines.Create;
 using FinancialManagement.Application.Features.PaymentMachines.Delete;
 using FinancialManagement.Application.Features.PaymentMachines.GetAll;
+using FinancialManagement.Application.Features.PaymentMachines.SetActive;
 using FinancialManagement.Application.Features.PaymentMachines.Update;
 using FluentValidation;
 using Microsoft.AspNetCore.Authorization;
@@ -21,6 +22,7 @@ public class PaymentMachinesController : ApiControllerBase
     private readonly UpdatePaymentMachineHandler _updateHandler;
     private readonly DeletePaymentMachineHandler _deleteHandler;
     private readonly CalculateFeeHandler _calculateFeeHandler;
+    private readonly SetPaymentMachineActiveHandler _setActiveHandler;
 
     public PaymentMachinesController(
         GetAllPaymentMachinesHandler getAllHandler,
@@ -29,7 +31,8 @@ public class PaymentMachinesController : ApiControllerBase
         IValidator<UpdatePaymentMachineRequest> updateValidator,
         UpdatePaymentMachineHandler updateHandler,
         DeletePaymentMachineHandler deleteHandler,
-        CalculateFeeHandler calculateFeeHandler)
+        CalculateFeeHandler calculateFeeHandler,
+        SetPaymentMachineActiveHandler setActiveHandler)
     {
         _getAllHandler = getAllHandler;
         _createValidator = createValidator;
@@ -38,6 +41,7 @@ public class PaymentMachinesController : ApiControllerBase
         _updateHandler = updateHandler;
         _deleteHandler = deleteHandler;
         _calculateFeeHandler = calculateFeeHandler;
+        _setActiveHandler = setActiveHandler;
     }
 
     [HttpGet]
@@ -67,6 +71,10 @@ public class PaymentMachinesController : ApiControllerBase
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken) =>
         FromResult(await _deleteHandler.HandleAsync(id, cancellationToken));
+
+    [HttpPatch("{id:guid}/active")]
+    public async Task<IActionResult> SetActive(Guid id, [FromBody] bool isActive, CancellationToken cancellationToken) =>
+        FromResult(await _setActiveHandler.HandleAsync(id, isActive, cancellationToken));
 
     [HttpPost("calculate-fee")]
     public async Task<IActionResult> CalculateFee(CalculateFeeRequest request, CancellationToken cancellationToken) =>

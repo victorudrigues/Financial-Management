@@ -5,15 +5,17 @@ import { useForm, UseFormRegister, FieldErrors } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
-import { Info, Plus } from "lucide-react";
+import { Info, Plus, Power, PowerOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { RowActions } from "@/components/row-actions";
+import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import {
   Dialog,
   DialogContent,
@@ -27,6 +29,7 @@ import {
   useCreatePaymentMachine,
   useDeletePaymentMachine,
   usePaymentMachines,
+  useSetPaymentMachineActive,
   useUpdatePaymentMachine,
 } from "@/features/payment-machines/api";
 import { PaymentMachineResponse } from "@/types/dtos";
@@ -310,6 +313,7 @@ export function PaymentMachinesPage() {
   const createMachine = useCreatePaymentMachine();
   const updateMachine = useUpdatePaymentMachine();
   const deleteMachine = useDeletePaymentMachine();
+  const setActiveMachine = useSetPaymentMachineActive();
 
   const createForm = useForm<FormValues>({ resolver: zodResolver(schema), defaultValues: DEFAULT_VALUES });
   const editForm = useForm<FormValues>({ resolver: zodResolver(schema), defaultValues: DEFAULT_VALUES });
@@ -400,7 +404,16 @@ export function PaymentMachinesPage() {
       await deleteMachine.mutateAsync(machine.id);
       toast.success("Maquineta excluída com sucesso.");
     } catch {
-      toast.error("Não foi possível excluir a maquineta.");
+      toast.error("Não foi possível excluir a maquineta. Verifique se ela está desativada.");
+    }
+  }
+
+  async function handleToggleActive(machine: PaymentMachineResponse) {
+    try {
+      await setActiveMachine.mutateAsync({ id: machine.id, isActive: !machine.isActive });
+      toast.success(machine.isActive ? "Maquineta desativada." : "Maquineta ativada.");
+    } catch {
+      toast.error("Não foi possível alterar o status da maquineta.");
     }
   }
 
@@ -485,6 +498,7 @@ export function PaymentMachinesPage() {
                   <TableHead>Bandeiras</TableHead>
                   <TableHead>PIX</TableHead>
                   <TableHead>Prazo</TableHead>
+                  <TableHead>Status</TableHead>
                   <TableHead className="w-12" />
                 </TableRow>
               </TableHeader>
@@ -495,6 +509,11 @@ export function PaymentMachinesPage() {
                     <TableCell>{machine.brandFees.map((f) => CardBrandLabels[f.brand]).join(", ")}</TableCell>
                     <TableCell>{formatPercent(machine.pixFeePercent)}</TableCell>
                     <TableCell>{machine.settlementDays} dias</TableCell>
+                    <TableCell>
+                      <Badge variant={machine.isActive ? "default" : "secondary"}>
+                        {machine.isActive ? "Ativa" : "Inativa"}
+                      </Badge>
+                    </TableCell>
                     <TableCell>
                       <RowActions
                         onView={() => {
@@ -507,13 +526,26 @@ export function PaymentMachinesPage() {
                         }}
                         onDelete={() => handleDelete(machine)}
                         deleteConfirmMessage={`Excluir a maquineta "${machine.name}"? Essa ação não pode ser desfeita.`}
+                        extraItems={
+                          <DropdownMenuItem onClick={() => handleToggleActive(machine)}>
+                            {machine.isActive ? (
+                              <>
+                                <PowerOff className="mr-2 h-4 w-4" /> Desativar
+                              </>
+                            ) : (
+                              <>
+                                <Power className="mr-2 h-4 w-4" /> Ativar
+                              </>
+                            )}
+                          </DropdownMenuItem>
+                        }
                       />
                     </TableCell>
                   </TableRow>
                 ))}
                 {machines?.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center text-muted-foreground">
+                    <TableCell colSpan={6} className="text-center text-muted-foreground">
                       Nenhuma maquineta cadastrada.
                     </TableCell>
                   </TableRow>
@@ -522,7 +554,7 @@ export function PaymentMachinesPage() {
               <TableFooter>
                 <TableRow>
                   <TableCell className="font-semibold">Total</TableCell>
-                  <TableCell colSpan={3} className="font-semibold">
+                  <TableCell colSpan={4} className="font-semibold">
                     {machines?.length ?? 0} maquineta(s) cadastrada(s)
                   </TableCell>
                   <TableCell />

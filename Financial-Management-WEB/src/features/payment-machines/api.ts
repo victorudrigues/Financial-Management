@@ -66,3 +66,16 @@ export function useDeletePaymentMachine() {
     },
   });
 }
+
+export function useSetPaymentMachineActive() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, isActive }: { id: string; isActive: boolean }) => {
+      const { data } = await apiClient.patch<PaymentMachineResponse>(`/api/payment-machines/${id}/active`, isActive);
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["payment-machines"] });
+    },
+  });
+}

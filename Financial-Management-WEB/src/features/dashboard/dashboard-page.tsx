@@ -7,9 +7,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { BreakdownList } from "@/components/breakdown-list";
 import { useDashboardOverview } from "@/features/dashboard/api";
-import { useCategoryBreakdown, useCostCenterBreakdown } from "@/features/cashflow/api";
+import { useAccountBreakdown, useCategoryBreakdown, useCostCenterBreakdown } from "@/features/cashflow/api";
 import { formatCurrency, formatPercent } from "@/lib/format";
 import { computePreset, toApiDateTime } from "@/lib/period";
+import { AccountTypeLabels } from "@/types/enums";
 
 export function DashboardPage() {
   const { data, isLoading } = useDashboardOverview();
@@ -20,6 +21,7 @@ export function DashboardPage() {
 
   const { data: categoryBreakdown, isLoading: isLoadingCategories } = useCategoryBreakdown(fromParam, toParam);
   const { data: costCenterBreakdown, isLoading: isLoadingCostCenters } = useCostCenterBreakdown(fromParam, toParam);
+  const { data: accountBreakdown, isLoading: isLoadingAccounts } = useAccountBreakdown(fromParam, toParam);
 
   if (isLoading || !data) {
     return (
@@ -60,6 +62,30 @@ export function DashboardPage() {
           </motion.div>
         ))}
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Saldo por Conta</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {isLoadingAccounts ? (
+            <Skeleton className="h-24 w-full" />
+          ) : (accountBreakdown ?? []).length === 0 ? (
+            <p className="text-sm text-muted-foreground">Nenhuma conta cadastrada.</p>
+          ) : (
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              {accountBreakdown?.map((account) => (
+                <StatCard
+                  key={account.accountId}
+                  title={`${account.accountName} · ${AccountTypeLabels[account.accountType]}`}
+                  value={formatCurrency(account.currentBalance)}
+                  tone={account.currentBalance >= 0 ? "positive" : "negative"}
+                />
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       <div className="grid gap-4 lg:grid-cols-2">
         <Card>

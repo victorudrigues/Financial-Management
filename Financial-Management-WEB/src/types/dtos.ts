@@ -113,6 +113,18 @@ export interface PaymentMachineBreakdownItem {
   transactionCount: number;
 }
 
+export interface AccountBreakdownItem {
+  accountId: string;
+  accountName: string;
+  accountType: AccountType;
+  currentBalance: number;
+  incomeAmount: number;
+  expenseAmount: number;
+  transferInAmount: number;
+  transferOutAmount: number;
+  transactionCount: number;
+}
+
 export interface DashboardOverviewResponse {
   currentBalance: number;
   todayIncome: number;

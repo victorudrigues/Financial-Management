@@ -11,6 +11,7 @@ import { BreakdownList } from "@/components/breakdown-list";
 import { PeriodFilter } from "@/components/period-filter";
 import { StatCard } from "@/components/stat-card";
 import {
+  useAccountBreakdown,
   useCashFlowSummary,
   useCategoryBreakdown,
   useCostCenterBreakdown,
@@ -19,7 +20,7 @@ import {
 import { downloadCashFlowReport } from "@/features/reports/api";
 import { formatCurrency } from "@/lib/format";
 import { computePreset, toApiDateTime } from "@/lib/period";
-import { CategoryType } from "@/types/enums";
+import { AccountTypeLabels, CategoryType } from "@/types/enums";
 
 export function ReportsPage() {
   const initialRange = computePreset("month");
@@ -34,6 +35,7 @@ export function ReportsPage() {
   const { data: categoryBreakdown, isLoading: isLoadingCategories } = useCategoryBreakdown(fromParam, toParam);
   const { data: costCenterBreakdown, isLoading: isLoadingCostCenters } = useCostCenterBreakdown(fromParam, toParam);
   const { data: machineBreakdown, isLoading: isLoadingMachines } = usePaymentMachineBreakdown(fromParam, toParam);
+  const { data: accountBreakdown, isLoading: isLoadingAccounts } = useAccountBreakdown(fromParam, toParam);
 
   const incomeCategories = (categoryBreakdown ?? []).filter((item) => item.categoryType === CategoryType.Receita);
   const expenseCategories = (categoryBreakdown ?? []).filter((item) => item.categoryType === CategoryType.Despesa);
@@ -191,6 +193,60 @@ export function ReportsPage() {
                   <TableRow>
                     <TableCell colSpan={5} className="text-center text-muted-foreground">
                       Nenhuma venda em maquineta no período.
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Por Conta</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {isLoadingAccounts ? (
+            <Skeleton className="h-40 w-full" />
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Conta</TableHead>
+                  <TableHead>Tipo</TableHead>
+                  <TableHead>Entradas</TableHead>
+                  <TableHead>Saídas</TableHead>
+                  <TableHead>Saldo do Período</TableHead>
+                  <TableHead>Saldo Atual</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {accountBreakdown?.map((account) => (
+                  <TableRow key={account.accountId}>
+                    <TableCell className="font-medium">{account.accountName}</TableCell>
+                    <TableCell>{AccountTypeLabels[account.accountType]}</TableCell>
+                    <TableCell className="text-emerald-600 dark:text-emerald-400">
+                      {formatCurrency(account.incomeAmount + account.transferInAmount)}
+                    </TableCell>
+                    <TableCell className="text-red-600 dark:text-red-400">
+                      {formatCurrency(account.expenseAmount + account.transferOutAmount)}
+                    </TableCell>
+                    <TableCell>
+                      {formatCurrency(
+                        account.incomeAmount +
+                          account.transferInAmount -
+                          account.expenseAmount -
+                          account.transferOutAmount
+                      )}
+                    </TableCell>
+                    <TableCell>{formatCurrency(account.currentBalance)}</TableCell>
+                  </TableRow>
+                ))}
+                {accountBreakdown?.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-center text-muted-foreground">
+                      Nenhuma conta cadastrada.
                     </TableCell>
                   </TableRow>
                 )}

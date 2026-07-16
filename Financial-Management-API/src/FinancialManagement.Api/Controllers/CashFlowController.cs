@@ -1,4 +1,5 @@
 using FinancialManagement.Api.Common;
+using FinancialManagement.Application.Features.CashFlow.GetAccountBreakdown;
 using FinancialManagement.Application.Features.CashFlow.GetCategoryBreakdown;
 using FinancialManagement.Application.Features.CashFlow.GetCostCenterBreakdown;
 using FinancialManagement.Application.Features.CashFlow.GetPaymentMachineBreakdown;
@@ -16,17 +17,20 @@ public class CashFlowController : ApiControllerBase
     private readonly GetCategoryBreakdownHandler _categoryBreakdownHandler;
     private readonly GetCostCenterBreakdownHandler _costCenterBreakdownHandler;
     private readonly GetPaymentMachineBreakdownHandler _paymentMachineBreakdownHandler;
+    private readonly GetAccountBreakdownHandler _accountBreakdownHandler;
 
     public CashFlowController(
         GetCashFlowSummaryHandler summaryHandler,
         GetCategoryBreakdownHandler categoryBreakdownHandler,
         GetCostCenterBreakdownHandler costCenterBreakdownHandler,
-        GetPaymentMachineBreakdownHandler paymentMachineBreakdownHandler)
+        GetPaymentMachineBreakdownHandler paymentMachineBreakdownHandler,
+        GetAccountBreakdownHandler accountBreakdownHandler)
     {
         _summaryHandler = summaryHandler;
         _categoryBreakdownHandler = categoryBreakdownHandler;
         _costCenterBreakdownHandler = costCenterBreakdownHandler;
         _paymentMachineBreakdownHandler = paymentMachineBreakdownHandler;
+        _accountBreakdownHandler = accountBreakdownHandler;
     }
 
     [HttpGet("summary")]
@@ -44,4 +48,8 @@ public class CashFlowController : ApiControllerBase
     [HttpGet("by-payment-machine")]
     public async Task<IActionResult> GetByPaymentMachine([FromQuery] DateTime from, [FromQuery] DateTime to, CancellationToken cancellationToken) =>
         Ok(await _paymentMachineBreakdownHandler.HandleAsync(from, to, cancellationToken));
+
+    [HttpGet("by-account")]
+    public async Task<IActionResult> GetByAccount([FromQuery] DateTime from, [FromQuery] DateTime to, CancellationToken cancellationToken) =>
+        Ok(await _accountBreakdownHandler.HandleAsync(from, to, cancellationToken));
 }

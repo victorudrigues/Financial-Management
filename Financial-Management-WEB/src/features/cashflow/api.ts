@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
 import {
+  AccountBreakdownItem,
   CashFlowSummaryResponse,
   CategoryBreakdownItem,
   CostCenterBreakdownItem,
@@ -48,6 +49,18 @@ export function usePaymentMachineBreakdown(from: string, to: string) {
     queryKey: ["cashflow", "by-payment-machine", from, to],
     queryFn: async () => {
       const { data } = await apiClient.get<PaymentMachineBreakdownItem[]>("/api/cashflow/by-payment-machine", {
+        params: { from, to },
+      });
+      return data;
+    },
+  });
+}
+
+export function useAccountBreakdown(from: string, to: string) {
+  return useQuery({
+    queryKey: ["cashflow", "by-account", from, to],
+    queryFn: async () => {
+      const { data } = await apiClient.get<AccountBreakdownItem[]>("/api/cashflow/by-account", {
         params: { from, to },
       });
       return data;

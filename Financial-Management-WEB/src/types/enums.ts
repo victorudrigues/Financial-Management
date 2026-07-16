@@ -110,6 +110,18 @@ export const GoalTypeLabels: Record<GoalType, string> = {
   [GoalType.CapitalizarCaixa]: "Capitalizar Caixa",
 };
 
+export enum CardBrand {
+  MasterCard = 1,
+  Elo = 2,
+  Visa = 3,
+}
+
+export const CardBrandLabels: Record<CardBrand, string> = {
+  [CardBrand.MasterCard]: "MasterCard",
+  [CardBrand.Elo]: "Elo",
+  [CardBrand.Visa]: "Visa",
+};
+
 export const Roles = {
   Administrador: "Administrador",
   Gerente: "Gerente",

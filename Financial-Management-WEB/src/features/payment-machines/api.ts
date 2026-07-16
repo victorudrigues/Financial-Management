@@ -1,12 +1,19 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
 import { PaymentMachineResponse } from "@/types/dtos";
+import { CardBrand } from "@/types/enums";
 
-export interface CreatePaymentMachineInput {
-  name: string;
+export interface BrandFeeInput {
+  brand: CardBrand;
   debitFeePercent: number;
   creditFeePercent: number;
   installmentFeePercent: number;
+}
+
+export interface CreatePaymentMachineInput {
+  name: string;
+  unifiedFeeForAllBrands: boolean;
+  brandFees: BrandFeeInput[];
   pixFeePercent: number;
   settlementDays: number;
   allowsAnticipation: boolean;

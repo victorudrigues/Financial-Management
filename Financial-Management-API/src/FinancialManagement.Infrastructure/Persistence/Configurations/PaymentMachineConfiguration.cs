@@ -12,10 +12,16 @@ public class PaymentMachineConfiguration : IEntityTypeConfiguration<PaymentMachi
         builder.HasKey(p => p.Id);
 
         builder.Property(p => p.Name).IsRequired().HasMaxLength(150);
-        builder.Property(p => p.DebitFeePercent).HasColumnType("decimal(5,2)");
-        builder.Property(p => p.CreditFeePercent).HasColumnType("decimal(5,2)");
-        builder.Property(p => p.InstallmentFeePercent).HasColumnType("decimal(5,2)");
         builder.Property(p => p.PixFeePercent).HasColumnType("decimal(5,2)");
         builder.Property(p => p.RowVersion).IsRowVersion();
+
+        builder.HasMany(p => p.BrandFees)
+            .WithOne()
+            .HasForeignKey(f => f.PaymentMachineId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.Navigation(p => p.BrandFees)
+            .HasField("_brandFees")
+            .UsePropertyAccessMode(PropertyAccessMode.Field);
     }
 }

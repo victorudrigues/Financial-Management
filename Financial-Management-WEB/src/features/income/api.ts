@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
 import { TransactionResponse } from "@/types/dtos";
-import { PaymentMethod } from "@/types/enums";
+import { CardBrand, PaymentMethod } from "@/types/enums";
 
 export interface CreateIncomeInput {
   description: string;
@@ -15,6 +15,7 @@ export interface CreateIncomeInput {
   notes?: string | null;
   paymentMachineId?: string | null;
   installments?: number | null;
+  cardBrand?: CardBrand | null;
 }
 
 export function useIncome(from: string, to: string) {

@@ -17,9 +17,10 @@ public class CreatePaymentMachineHandler
     {
         var machine = new PaymentMachine(
             request.Name,
-            request.DebitFeePercent,
-            request.CreditFeePercent,
-            request.InstallmentFeePercent,
+            request.UnifiedFeeForAllBrands,
+            request.BrandFees
+                .Select(b => new BrandFeeSpec(b.Brand, b.DebitFeePercent, b.CreditFeePercent, b.InstallmentFeePercent))
+                .ToList(),
             request.PixFeePercent,
             request.SettlementDays,
             request.AllowsAnticipation);
@@ -27,11 +28,6 @@ public class CreatePaymentMachineHandler
         await _unitOfWork.PaymentMachines.AddAsync(machine, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-        return Result.Success(ToResponse(machine));
+        return Result.Success(PaymentMachineResponse.FromEntity(machine));
     }
-
-    private static PaymentMachineResponse ToResponse(PaymentMachine machine) => new(
-        machine.Id, machine.Name, machine.DebitFeePercent, machine.CreditFeePercent,
-        machine.InstallmentFeePercent, machine.PixFeePercent, machine.SettlementDays,
-        machine.AllowsAnticipation, machine.IsActive);
 }

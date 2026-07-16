@@ -13,4 +13,5 @@ public record CreateIncomeRequest(
     Guid? CostCenterId,
     string? Notes,
     Guid? PaymentMachineId,
-    int? Installments);
+    int? Installments,
+    CardBrand? CardBrand);

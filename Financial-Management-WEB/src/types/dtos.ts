@@ -1,5 +1,6 @@
 import {
   AccountType,
+  CardBrand,
   CategoryType,
   ExpenseNature,
   PaymentMethod,
@@ -32,12 +33,18 @@ export interface CostCenterResponse {
   description?: string | null;
 }
 
-export interface PaymentMachineResponse {
-  id: string;
-  name: string;
+export interface BrandFeeResponse {
+  brand: CardBrand;
   debitFeePercent: number;
   creditFeePercent: number;
   installmentFeePercent: number;
+}
+
+export interface PaymentMachineResponse {
+  id: string;
+  name: string;
+  unifiedFeeForAllBrands: boolean;
+  brandFees: BrandFeeResponse[];
   pixFeePercent: number;
   settlementDays: number;
   allowsAnticipation: boolean;

@@ -21,7 +21,8 @@ public class CalculateFeeHandler
         if (machine is null)
             return Result.Failure<CalculateFeeResponse>("Maquineta não encontrada.");
 
-        var fee = machine.CalculateFee(request.GrossAmount, request.PaymentMethod, request.Installments, _dateTimeProvider.UtcNow);
+        var cardBrand = request.CardBrand ?? Domain.Enums.CardBrand.MasterCard;
+        var fee = machine.CalculateFee(request.GrossAmount, request.PaymentMethod, request.Installments, _dateTimeProvider.UtcNow, cardBrand);
 
         return Result.Success(new CalculateFeeResponse(fee.GrossAmount, fee.FeeAmount, fee.NetAmount, fee.ExpectedSettlementDate));
     }

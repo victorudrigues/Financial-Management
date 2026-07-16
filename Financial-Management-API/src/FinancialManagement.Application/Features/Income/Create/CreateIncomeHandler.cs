@@ -42,7 +42,8 @@ public class CreateIncomeHandler
                 return Result.Failure<TransactionResponse>("Maquineta não encontrada.");
 
             var installments = request.Installments ?? 1;
-            var fee = machine.CalculateFee(request.Amount, request.PaymentMethod, installments, _dateTimeProvider.UtcNow);
+            var cardBrand = request.CardBrand ?? Domain.Enums.CardBrand.MasterCard;
+            var fee = machine.CalculateFee(request.Amount, request.PaymentMethod, installments, _dateTimeProvider.UtcNow, cardBrand);
 
             income.ApplyCardFee(machine.Id, installments, fee.FeeAmount, fee.NetAmount, fee.ExpectedSettlementDate);
 
@@ -58,7 +59,7 @@ public class CreateIncomeHandler
                     request.CompetenceDate,
                     request.PaymentMethod,
                     Domain.Enums.ExpenseNature.Variable,
-                    notes: $"Gerado automaticamente a partir da receita \"{income.Description}\".");
+                    notes: $"Gerado automaticamente a partir da receita \"{income.Description}\" (bandeira: {cardBrand}).");
 
                 feeExpense.Confirm(request.CompetenceDate);
 

@@ -1,4 +1,3 @@
-using FinancialManagement.Domain.Entities;
 using FinancialManagement.Domain.Repositories;
 
 namespace FinancialManagement.Application.Features.PaymentMachines.GetAll;
@@ -16,11 +15,6 @@ public class GetAllPaymentMachinesHandler
     {
         var machines = await _unitOfWork.PaymentMachines.GetAllAsync(cancellationToken);
 
-        return machines.Select(ToResponse).ToList();
+        return machines.Select(PaymentMachineResponse.FromEntity).ToList();
     }
-
-    private static PaymentMachineResponse ToResponse(PaymentMachine machine) => new(
-        machine.Id, machine.Name, machine.DebitFeePercent, machine.CreditFeePercent,
-        machine.InstallmentFeePercent, machine.PixFeePercent, machine.SettlementDays,
-        machine.AllowsAnticipation, machine.IsActive);
 }

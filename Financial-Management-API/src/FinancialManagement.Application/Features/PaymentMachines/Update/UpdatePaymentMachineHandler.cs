@@ -1,3 +1,4 @@
+using FinancialManagement.Domain.Entities;
 using FinancialManagement.Domain.Repositories;
 using FinancialManagement.SharedKernel.Common;
 
@@ -21,9 +22,10 @@ public class UpdatePaymentMachineHandler
 
         machine.Update(
             request.Name,
-            request.DebitFeePercent,
-            request.CreditFeePercent,
-            request.InstallmentFeePercent,
+            request.UnifiedFeeForAllBrands,
+            request.BrandFees
+                .Select(b => new BrandFeeSpec(b.Brand, b.DebitFeePercent, b.CreditFeePercent, b.InstallmentFeePercent))
+                .ToList(),
             request.PixFeePercent,
             request.SettlementDays,
             request.AllowsAnticipation);
@@ -31,9 +33,6 @@ public class UpdatePaymentMachineHandler
         _unitOfWork.PaymentMachines.Update(machine);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-        return Result.Success(new PaymentMachineResponse(
-            machine.Id, machine.Name, machine.DebitFeePercent, machine.CreditFeePercent,
-            machine.InstallmentFeePercent, machine.PixFeePercent, machine.SettlementDays,
-            machine.AllowsAnticipation, machine.IsActive));
+        return Result.Success(PaymentMachineResponse.FromEntity(machine));
     }
 }

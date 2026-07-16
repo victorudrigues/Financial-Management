@@ -30,7 +30,7 @@ import { useCostCenters } from "@/features/cost-centers/api";
 import { usePaymentMachines } from "@/features/payment-machines/api";
 import { TransactionActions } from "@/features/transactions/transaction-actions";
 import { TransactionDetailsDialog } from "@/features/transactions/transaction-details-dialog";
-import { PaymentMethod, PaymentMethodLabels, TransactionStatusLabels } from "@/types/enums";
+import { CardBrand, CardBrandLabels, PaymentMethod, PaymentMethodLabels, TransactionStatusLabels } from "@/types/enums";
 import { TransactionResponse } from "@/types/dtos";
 import { formatCurrency, formatDate, toIsoDate } from "@/lib/format";
 
@@ -49,11 +49,13 @@ const schema = z.object({
   clientName: z.string().optional(),
   paymentMachineId: z.string().optional(),
   installments: z.number().int().min(1).optional(),
+  cardBrand: z.number().int(),
 });
 
 type FormValues = z.infer<typeof schema>;
 
 const paymentMethodOptions = Object.entries(PaymentMethodLabels).map(([value, label]) => ({ value, label }));
+const cardBrandOptions = Object.entries(CardBrandLabels).map(([value, label]) => ({ value, label }));
 
 export function IncomePage() {
   const [open, setOpen] = useState(false);
@@ -87,6 +89,7 @@ export function IncomePage() {
       clientName: "",
       paymentMachineId: "",
       installments: 1,
+      cardBrand: CardBrand.MasterCard,
     },
   });
 
@@ -100,7 +103,8 @@ export function IncomePage() {
 
   const selectedPaymentMethod = watch("paymentMethod");
   const showMachinePicker = selectedPaymentMethod === PaymentMethod.Credito || selectedPaymentMethod === PaymentMethod.Debito;
-  const showInstallments = selectedPaymentMethod === PaymentMethod.Credito && !!watch("paymentMachineId");
+  const hasMachineSelected = showMachinePicker && !!watch("paymentMachineId");
+  const showInstallments = selectedPaymentMethod === PaymentMethod.Credito && hasMachineSelected;
 
   async function onSubmit(values: FormValues) {
     try {
@@ -108,6 +112,7 @@ export function IncomePage() {
         ...values,
         paymentMachineId: showMachinePicker && values.paymentMachineId ? values.paymentMachineId : null,
         installments: showInstallments ? values.installments : null,
+        cardBrand: hasMachineSelected ? values.cardBrand : null,
       });
       toast.success("Receita registrada com sucesso.");
       reset();
@@ -203,6 +208,17 @@ export function IncomePage() {
                       placeholder="Sem máquininha"
                     />
                   </div>
+                  {hasMachineSelected && (
+                    <div className="space-y-2">
+                      <Label htmlFor="income-card-brand">Bandeira</Label>
+                      <LabeledSelect
+                        id="income-card-brand"
+                        value={String(watch("cardBrand"))}
+                        onValueChange={(value) => setValue("cardBrand", Number(value))}
+                        options={cardBrandOptions}
+                      />
+                    </div>
+                  )}
                   {showInstallments && (
                     <div className="space-y-2">
                       <Label htmlFor="installments">Parcelas</Label>

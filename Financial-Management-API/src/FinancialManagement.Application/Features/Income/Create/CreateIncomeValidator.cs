@@ -12,5 +12,6 @@ public class CreateIncomeValidator : AbstractValidator<CreateIncomeRequest>
         RuleFor(x => x.CategoryId).NotEmpty();
         RuleFor(x => x.PaymentMethod).IsInEnum();
         RuleFor(x => x.Installments).GreaterThanOrEqualTo(1).When(x => x.Installments.HasValue);
+        RuleFor(x => x.CardBrand).IsInEnum().When(x => x.CardBrand.HasValue);
     }
 }

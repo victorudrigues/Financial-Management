@@ -62,6 +62,8 @@ public class CreateIncomeHandler
                     notes: $"Gerado automaticamente a partir da receita \"{income.Description}\" (bandeira: {cardBrand}).");
 
                 feeExpense.Confirm(request.CompetenceDate);
+                account.Debit(fee.FeeAmount);
+                _unitOfWork.Accounts.Update(account);
 
                 await _unitOfWork.Transactions.AddAsync(feeExpense, cancellationToken);
                 income.LinkFeeTransaction(feeExpense.Id);

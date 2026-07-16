@@ -1,29 +1,12 @@
-using FinancialManagement.Application.Features.CashFlow.GetCategoryBreakdown;
-using FinancialManagement.Application.Features.CashFlow.GetCostCenterBreakdown;
-using FinancialManagement.Application.Features.CashFlow.GetSummary;
+using FinancialManagement.Application.Features.Reports.ExportCashFlow;
 
 namespace FinancialManagement.Application.Common.Interfaces;
 
 public interface IReportExportService
 {
-    byte[] GenerateCashFlowPdf(
-        CashFlowSummaryResponse summary,
-        IReadOnlyList<CategoryBreakdownItem> categoryBreakdown,
-        IReadOnlyList<CostCenterBreakdownItem> costCenterBreakdown,
-        DateTime from,
-        DateTime to);
+    byte[] GenerateCashFlowPdf(CashFlowReportData data);
 
-    byte[] GenerateCashFlowExcel(
-        CashFlowSummaryResponse summary,
-        IReadOnlyList<CategoryBreakdownItem> categoryBreakdown,
-        IReadOnlyList<CostCenterBreakdownItem> costCenterBreakdown,
-        DateTime from,
-        DateTime to);
+    byte[] GenerateCashFlowExcel(CashFlowReportData data);
 
-    byte[] GenerateCashFlowCsv(
-        CashFlowSummaryResponse summary,
-        IReadOnlyList<CategoryBreakdownItem> categoryBreakdown,
-        IReadOnlyList<CostCenterBreakdownItem> costCenterBreakdown,
-        DateTime from,
-        DateTime to);
+    byte[] GenerateCashFlowCsv(CashFlowReportData data);
 }

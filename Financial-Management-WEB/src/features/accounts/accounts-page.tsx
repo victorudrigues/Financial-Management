@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { RowActions } from "@/components/row-actions";
 import {
@@ -100,6 +100,7 @@ export function AccountsPage() {
   }
 
   const isViewMode = dialogAccount?.mode === "view";
+  const totalBalance = accounts?.reduce((sum, account) => sum + account.currentBalance, 0) ?? 0;
 
   return (
     <div className="space-y-6">
@@ -250,6 +251,15 @@ export function AccountsPage() {
                   </TableRow>
                 )}
               </TableBody>
+              <TableFooter>
+                <TableRow>
+                  <TableCell colSpan={2} className="font-semibold">
+                    Total
+                  </TableCell>
+                  <TableCell className="font-semibold">{formatCurrency(totalBalance)}</TableCell>
+                  <TableCell colSpan={2} />
+                </TableRow>
+              </TableFooter>
             </Table>
           )}
         </CardContent>

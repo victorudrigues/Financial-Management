@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Dialog,
@@ -103,6 +103,8 @@ export function ExpensesPage() {
   function accountName(accountId: string) {
     return accounts?.find((a) => a.id === accountId)?.name ?? "-";
   }
+
+  const totalExpenses = expenses?.reduce((sum, transaction) => sum + transaction.amount, 0) ?? 0;
 
   async function onSubmit(values: FormValues) {
     try {
@@ -263,6 +265,17 @@ export function ExpensesPage() {
                     </TableRow>
                   )}
                 </TableBody>
+                <TableFooter>
+                  <TableRow>
+                    <TableCell colSpan={2} className="font-semibold">
+                      Total
+                    </TableCell>
+                    <TableCell className="font-semibold text-red-600 dark:text-red-400">
+                      {formatCurrency(totalExpenses)}
+                    </TableCell>
+                    <TableCell colSpan={5} />
+                  </TableRow>
+                </TableFooter>
               </Table>
             </div>
           )}

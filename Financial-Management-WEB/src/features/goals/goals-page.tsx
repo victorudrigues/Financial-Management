@@ -236,7 +236,19 @@ export function GoalsPage() {
       {isLoading ? (
         <Skeleton className="h-40 w-full" />
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <>
+          <Card>
+            <CardContent className="flex flex-wrap items-center justify-between gap-2 py-4">
+              <span className="text-sm text-muted-foreground">
+                Total acumulado em {goals?.length ?? 0} meta(s)
+              </span>
+              <span className="text-lg font-semibold">
+                {formatCurrency(goals?.reduce((sum, goal) => sum + goal.currentAmount, 0) ?? 0)} /{" "}
+                {formatCurrency(goals?.reduce((sum, goal) => sum + goal.targetAmount, 0) ?? 0)}
+              </span>
+            </CardContent>
+          </Card>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {goals?.map((goal) => (
             <Card key={goal.id}>
               <CardHeader className="flex flex-row items-start justify-between space-y-0">
@@ -268,7 +280,8 @@ export function GoalsPage() {
             </Card>
           ))}
           {goals?.length === 0 && <p className="text-muted-foreground">Nenhuma meta cadastrada.</p>}
-        </div>
+          </div>
+        </>
       )}
     </div>
   );

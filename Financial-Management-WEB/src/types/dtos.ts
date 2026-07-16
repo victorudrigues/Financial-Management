@@ -99,7 +99,17 @@ export interface CategoryBreakdownItem {
 export interface CostCenterBreakdownItem {
   costCenterId?: string | null;
   costCenterName: string;
-  totalAmount: number;
+  incomeAmount: number;
+  expenseAmount: number;
+  transactionCount: number;
+}
+
+export interface PaymentMachineBreakdownItem {
+  paymentMachineId: string;
+  paymentMachineName: string;
+  grossAmount: number;
+  feeAmount: number;
+  netAmount: number;
   transactionCount: number;
 }
 

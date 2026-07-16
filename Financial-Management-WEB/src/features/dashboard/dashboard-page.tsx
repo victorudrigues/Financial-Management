@@ -96,7 +96,7 @@ export function DashboardPage() {
                 entries={(costCenterBreakdown ?? []).slice(0, 5).map((item) => ({
                   key: item.costCenterId ?? "unassigned",
                   name: item.costCenterName,
-                  amount: item.totalAmount,
+                  amount: item.incomeAmount + item.expenseAmount,
                 }))}
               />
             )}

@@ -1,3 +1,4 @@
+using FinancialManagement.Domain.Enums;
 using FinancialManagement.Domain.Repositories;
 
 namespace FinancialManagement.Application.Features.CashFlow.GetCostCenterBreakdown;
@@ -29,9 +30,10 @@ public class GetCostCenterBreakdownHandler
             .Select(g => new CostCenterBreakdownItem(
                 g.Key,
                 g.Key.HasValue && costCentersById.TryGetValue(g.Key.Value, out var costCenter) ? costCenter.Name : Unassigned,
-                g.Sum(t => t.Amount),
+                g.Where(t => t.Type == TransactionType.Income).Sum(t => t.Amount),
+                g.Where(t => t.Type == TransactionType.Expense).Sum(t => t.Amount),
                 g.Count()))
-            .OrderByDescending(item => item.TotalAmount)
+            .OrderByDescending(item => item.IncomeAmount + item.ExpenseAmount)
             .ToList();
     }
 }

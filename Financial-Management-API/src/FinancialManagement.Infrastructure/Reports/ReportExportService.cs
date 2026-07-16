@@ -100,19 +100,22 @@ public class ReportExportService : IReportExportService
                             columns.RelativeColumn(2);
                             columns.RelativeColumn();
                             columns.RelativeColumn();
+                            columns.RelativeColumn();
                         });
 
                         table.Header(header =>
                         {
                             header.Cell().Text("Centro de Custo").Bold();
-                            header.Cell().Text("Valor").Bold();
+                            header.Cell().Text("Entradas").Bold();
+                            header.Cell().Text("Saídas").Bold();
                             header.Cell().Text("Qtd.").Bold();
                         });
 
                         foreach (var item in costCenterBreakdown)
                         {
                             table.Cell().Text(item.CostCenterName);
-                            table.Cell().Text(item.TotalAmount.ToString("C", PtBr));
+                            table.Cell().Text(item.IncomeAmount.ToString("C", PtBr));
+                            table.Cell().Text(item.ExpenseAmount.ToString("C", PtBr));
                             table.Cell().Text(item.TransactionCount.ToString());
                         }
                     });
@@ -179,16 +182,18 @@ public class ReportExportService : IReportExportService
 
         var costCenterSheet = workbook.Worksheets.Add("Por Centro de Custo");
         costCenterSheet.Cell(1, 1).Value = "Centro de Custo";
-        costCenterSheet.Cell(1, 2).Value = "Valor";
-        costCenterSheet.Cell(1, 3).Value = "Qtd. Movimentações";
-        costCenterSheet.Range(1, 1, 1, 3).Style.Font.Bold = true;
+        costCenterSheet.Cell(1, 2).Value = "Entradas";
+        costCenterSheet.Cell(1, 3).Value = "Saídas";
+        costCenterSheet.Cell(1, 4).Value = "Qtd. Movimentações";
+        costCenterSheet.Range(1, 1, 1, 4).Style.Font.Bold = true;
 
         row = 2;
         foreach (var item in costCenterBreakdown)
         {
             costCenterSheet.Cell(row, 1).Value = item.CostCenterName;
-            costCenterSheet.Cell(row, 2).Value = item.TotalAmount;
-            costCenterSheet.Cell(row, 3).Value = item.TransactionCount;
+            costCenterSheet.Cell(row, 2).Value = item.IncomeAmount;
+            costCenterSheet.Cell(row, 3).Value = item.ExpenseAmount;
+            costCenterSheet.Cell(row, 4).Value = item.TransactionCount;
             row++;
         }
 
@@ -225,10 +230,10 @@ public class ReportExportService : IReportExportService
 
         builder.AppendLine();
         builder.AppendLine("Por Centro de Custo");
-        builder.AppendLine("Centro de Custo;Valor;Quantidade");
+        builder.AppendLine("Centro de Custo;Entradas;Saidas;Quantidade");
         foreach (var item in costCenterBreakdown)
         {
-            builder.AppendLine($"{item.CostCenterName};{item.TotalAmount};{item.TransactionCount}");
+            builder.AppendLine($"{item.CostCenterName};{item.IncomeAmount};{item.ExpenseAmount};{item.TransactionCount}");
         }
 
         return Encoding.UTF8.GetBytes(builder.ToString());

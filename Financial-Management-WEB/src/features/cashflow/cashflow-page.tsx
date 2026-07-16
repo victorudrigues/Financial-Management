@@ -94,7 +94,7 @@ export function CashFlowPage() {
                     entries={(costCenterBreakdown ?? []).map((item) => ({
                       key: item.costCenterId ?? "unassigned",
                       name: item.costCenterName,
-                      amount: item.totalAmount,
+                      amount: item.incomeAmount + item.expenseAmount,
                     }))}
                   />
                 )}

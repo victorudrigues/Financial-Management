@@ -3,5 +3,6 @@ namespace FinancialManagement.Application.Features.CashFlow.GetCostCenterBreakdo
 public record CostCenterBreakdownItem(
     Guid? CostCenterId,
     string CostCenterName,
-    decimal TotalAmount,
+    decimal IncomeAmount,
+    decimal ExpenseAmount,
     int TransactionCount);

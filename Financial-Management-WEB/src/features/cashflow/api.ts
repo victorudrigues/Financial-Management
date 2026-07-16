@@ -1,6 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
-import { CashFlowSummaryResponse, CategoryBreakdownItem, CostCenterBreakdownItem } from "@/types/dtos";
+import {
+  CashFlowSummaryResponse,
+  CategoryBreakdownItem,
+  CostCenterBreakdownItem,
+  PaymentMachineBreakdownItem,
+} from "@/types/dtos";
 
 export function useCashFlowSummary(from: string, to: string) {
   return useQuery({
@@ -31,6 +36,18 @@ export function useCostCenterBreakdown(from: string, to: string) {
     queryKey: ["cashflow", "by-cost-center", from, to],
     queryFn: async () => {
       const { data } = await apiClient.get<CostCenterBreakdownItem[]>("/api/cashflow/by-cost-center", {
+        params: { from, to },
+      });
+      return data;
+    },
+  });
+}
+
+export function usePaymentMachineBreakdown(from: string, to: string) {
+  return useQuery({
+    queryKey: ["cashflow", "by-payment-machine", from, to],
+    queryFn: async () => {
+      const { data } = await apiClient.get<PaymentMachineBreakdownItem[]>("/api/cashflow/by-payment-machine", {
         params: { from, to },
       });
       return data;

@@ -19,7 +19,7 @@ public class Repository<T> : IRepository<T> where T : BaseEntity
         Set.FirstOrDefaultAsync(e => e.Id == id, cancellationToken);
 
     public virtual Task<List<T>> GetAllAsync(CancellationToken cancellationToken = default) =>
-        Set.AsNoTracking().ToListAsync(cancellationToken);
+        Set.AsNoTracking().OrderByDescending(e => e.CreatedAt).ToListAsync(cancellationToken);
 
     public async Task AddAsync(T entity, CancellationToken cancellationToken = default) =>
         await Set.AddAsync(entity, cancellationToken);

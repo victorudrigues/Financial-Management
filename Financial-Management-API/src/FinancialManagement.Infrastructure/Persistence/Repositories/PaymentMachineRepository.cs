@@ -12,7 +12,7 @@ public class PaymentMachineRepository : Repository<PaymentMachine>, IPaymentMach
         Set.Include(p => p.BrandFees).FirstOrDefaultAsync(e => e.Id == id, cancellationToken);
 
     public override Task<List<PaymentMachine>> GetAllAsync(CancellationToken cancellationToken = default) =>
-        Set.Include(p => p.BrandFees).AsNoTracking().ToListAsync(cancellationToken);
+        Set.Include(p => p.BrandFees).AsNoTracking().OrderByDescending(p => p.CreatedAt).ToListAsync(cancellationToken);
 
     public override void Update(PaymentMachine entity)
     {

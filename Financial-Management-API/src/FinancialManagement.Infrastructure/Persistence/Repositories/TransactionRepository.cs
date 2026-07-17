@@ -16,7 +16,7 @@ public class TransactionRepository : Repository<Transaction>, ITransactionReposi
         if (type.HasValue)
             query = query.Where(t => t.Type == type.Value);
 
-        return query.OrderBy(t => t.CompetenceDate).ToListAsync(cancellationToken);
+        return query.OrderByDescending(t => t.CreatedAt).ToListAsync(cancellationToken);
     }
 
     public Task<List<Transaction>> GetPendingRecurringAsync(CancellationToken cancellationToken = default) =>

@@ -28,6 +28,7 @@ import { CategoryType, CategoryTypeLabels } from "@/types/enums";
 import { CategoryResponse } from "@/types/dtos";
 
 const categoryTypeOptions = Object.entries(CategoryTypeLabels).map(([value, label]) => ({ value, label }));
+const categoryTypeFilterOptions = [{ value: "all", label: "Todos" }, ...categoryTypeOptions];
 
 const schema = z.object({
   name: z.string().min(1, "Informe o nome da categoria."),
@@ -42,6 +43,8 @@ export function CategoriesPage() {
   const [open, setOpen] = useState(false);
   const [dialogCategory, setDialogCategory] = useState<{ category: CategoryResponse; mode: DialogMode } | null>(null);
   const [editName, setEditName] = useState("");
+  const [filterName, setFilterName] = useState("");
+  const [filterType, setFilterType] = useState("all");
 
   const { data: categories, isLoading } = useCategories();
   const createCategory = useCreateCategory();
@@ -95,6 +98,13 @@ export function CategoriesPage() {
       toast.error("Não foi possível excluir a categoria. Verifique se não há movimentações vinculadas.");
     }
   }
+
+  const filteredCategories =
+    categories?.filter((category) => {
+      if (filterType !== "all" && String(category.type) !== filterType) return false;
+      if (filterName && !category.name.toLowerCase().includes(filterName.toLowerCase())) return false;
+      return true;
+    }) ?? [];
 
   return (
     <div className="space-y-6">
@@ -185,6 +195,34 @@ export function CategoriesPage() {
 
       <Card>
         <CardHeader>
+          <CardTitle>Filtros</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="filter-name">Descrição</Label>
+              <Input
+                id="filter-name"
+                value={filterName}
+                onChange={(e) => setFilterName(e.target.value)}
+                placeholder="Buscar por nome"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="filter-type">Tipo</Label>
+              <LabeledSelect
+                id="filter-type"
+                value={filterType}
+                onValueChange={setFilterType}
+                options={categoryTypeFilterOptions}
+              />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
           <CardTitle>Categorias Cadastradas</CardTitle>
         </CardHeader>
         <CardContent>
@@ -200,7 +238,7 @@ export function CategoriesPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {categories?.map((category) => (
+                {filteredCategories.map((category) => (
                   <TableRow key={category.id}>
                     <TableCell className="font-medium">{category.name}</TableCell>
                     <TableCell>
@@ -216,7 +254,7 @@ export function CategoriesPage() {
                     </TableCell>
                   </TableRow>
                 ))}
-                {categories?.length === 0 && (
+                {filteredCategories.length === 0 && (
                   <TableRow>
                     <TableCell colSpan={3} className="text-center text-muted-foreground">
                       Nenhuma categoria cadastrada.
@@ -227,7 +265,7 @@ export function CategoriesPage() {
               <TableFooter>
                 <TableRow>
                   <TableCell className="font-semibold">Total</TableCell>
-                  <TableCell className="font-semibold">{categories?.length ?? 0} categoria(s)</TableCell>
+                  <TableCell className="font-semibold">{filteredCategories.length} categoria(s)</TableCell>
                   <TableCell />
                 </TableRow>
               </TableFooter>

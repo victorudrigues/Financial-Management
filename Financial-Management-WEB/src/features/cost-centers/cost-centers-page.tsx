@@ -38,6 +38,8 @@ export function CostCentersPage() {
   const [dialogState, setDialogState] = useState<{ costCenter: CostCenterResponse; mode: DialogMode } | null>(null);
   const [editName, setEditName] = useState("");
   const [editDescription, setEditDescription] = useState("");
+  const [filterName, setFilterName] = useState("");
+  const [filterDescription, setFilterDescription] = useState("");
 
   const { data: costCenters, isLoading } = useCostCenters();
   const createCostCenter = useCreateCostCenter();
@@ -87,6 +89,17 @@ export function CostCentersPage() {
       toast.error("Não foi possível excluir o centro de custo. Verifique se não há movimentações vinculadas.");
     }
   }
+
+  const filteredCostCenters =
+    costCenters?.filter((costCenter) => {
+      if (filterName && !costCenter.name.toLowerCase().includes(filterName.toLowerCase())) return false;
+      if (
+        filterDescription &&
+        !(costCenter.description ?? "").toLowerCase().includes(filterDescription.toLowerCase())
+      )
+        return false;
+      return true;
+    }) ?? [];
 
   return (
     <div className="space-y-6">
@@ -168,6 +181,34 @@ export function CostCentersPage() {
 
       <Card>
         <CardHeader>
+          <CardTitle>Filtros</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="filter-name">Nome</Label>
+              <Input
+                id="filter-name"
+                value={filterName}
+                onChange={(e) => setFilterName(e.target.value)}
+                placeholder="Buscar por nome"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="filter-description">Descrição</Label>
+              <Input
+                id="filter-description"
+                value={filterDescription}
+                onChange={(e) => setFilterDescription(e.target.value)}
+                placeholder="Buscar por descrição"
+              />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
           <CardTitle>Centros de Custo Cadastrados</CardTitle>
         </CardHeader>
         <CardContent>
@@ -183,7 +224,7 @@ export function CostCentersPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {costCenters?.map((costCenter) => (
+                {filteredCostCenters.map((costCenter) => (
                   <TableRow key={costCenter.id}>
                     <TableCell className="font-medium">{costCenter.name}</TableCell>
                     <TableCell>{costCenter.description ?? "-"}</TableCell>
@@ -197,7 +238,7 @@ export function CostCentersPage() {
                     </TableCell>
                   </TableRow>
                 ))}
-                {costCenters?.length === 0 && (
+                {filteredCostCenters.length === 0 && (
                   <TableRow>
                     <TableCell colSpan={3} className="text-center text-muted-foreground">
                       Nenhum centro de custo cadastrado.
@@ -208,7 +249,7 @@ export function CostCentersPage() {
               <TableFooter>
                 <TableRow>
                   <TableCell className="font-semibold">Total</TableCell>
-                  <TableCell className="font-semibold">{costCenters?.length ?? 0} centro(s) de custo</TableCell>
+                  <TableCell className="font-semibold">{filteredCostCenters.length} centro(s) de custo</TableCell>
                   <TableCell />
                 </TableRow>
               </TableFooter>

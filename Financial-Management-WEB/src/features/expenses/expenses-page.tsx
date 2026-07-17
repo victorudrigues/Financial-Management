@@ -59,17 +59,36 @@ const schema = z.object({
 
 type FormValues = z.infer<typeof schema>;
 
-const paymentMethodOptions = Object.entries(PaymentMethodLabels).map(([value, label]) => ({ value, label }));
+const paymentMethodOptions = Object.entries(PaymentMethodLabels)
+  .filter(([value]) => Number(value) !== PaymentMethod.Transferencia)
+  .map(([value, label]) => ({ value, label }));
 const expenseNatureOptions = Object.entries(ExpenseNatureLabels).map(([value, label]) => ({ value, label }));
 const recurrenceOptions = Object.entries(RecurrenceTypeLabels).map(([value, label]) => ({ value, label }));
+const statusFilterOptions = [
+  { value: "all", label: "Todos" },
+  ...Object.entries(TransactionStatusLabels).map(([value, label]) => ({ value, label })),
+];
+const natureFilterOptions = [
+  { value: "all", label: "Todos" },
+  ...Object.entries(ExpenseNatureLabels).map(([value, label]) => ({ value, label })),
+];
+const paymentMethodFilterOptions = [
+  { value: "all", label: "Todos" },
+  ...Object.entries(PaymentMethodLabels).map(([value, label]) => ({ value, label })),
+];
 
 export function ExpensesPage() {
   const [open, setOpen] = useState(false);
   const [viewingTransaction, setViewingTransaction] = useState<TransactionResponse | null>(null);
-  const from = toIsoDate(firstDayOfMonth());
-  const to = toIsoDate(new Date());
+  const [filterDescription, setFilterDescription] = useState("");
+  const [filterStatus, setFilterStatus] = useState("all");
+  const [filterNature, setFilterNature] = useState("all");
+  const [filterPaymentMethod, setFilterPaymentMethod] = useState("all");
+  const [filterAccountId, setFilterAccountId] = useState("all");
+  const [filterFrom, setFilterFrom] = useState(toIsoDate(firstDayOfMonth()));
+  const [filterTo, setFilterTo] = useState(toIsoDate(new Date()));
 
-  const { data: expenses, isLoading } = useExpenses(from, to);
+  const { data: expenses, isLoading } = useExpenses(filterFrom, filterTo);
   const { data: accounts } = useAccounts();
   const { data: categories } = useCategories();
   const { data: costCenters } = useCostCenters();
@@ -104,7 +123,22 @@ export function ExpensesPage() {
     return accounts?.find((a) => a.id === accountId)?.name ?? "-";
   }
 
-  const totalExpenses = expenses?.reduce((sum, transaction) => sum + transaction.amount, 0) ?? 0;
+  const accountFilterOptions = [
+    { value: "all", label: "Todos" },
+    ...accountOptions,
+  ];
+
+  const filteredExpenses =
+    expenses?.filter((transaction) => {
+      if (filterStatus !== "all" && String(transaction.status) !== filterStatus) return false;
+      if (filterNature !== "all" && String(transaction.expenseNature) !== filterNature) return false;
+      if (filterPaymentMethod !== "all" && String(transaction.paymentMethod) !== filterPaymentMethod) return false;
+      if (filterAccountId !== "all" && transaction.accountId !== filterAccountId) return false;
+      if (filterDescription && !transaction.description.toLowerCase().includes(filterDescription.toLowerCase())) return false;
+      return true;
+    }) ?? [];
+
+  const totalExpenses = filteredExpenses.reduce((sum, transaction) => sum + transaction.amount, 0);
 
   async function onSubmit(values: FormValues) {
     try {
@@ -216,6 +250,69 @@ export function ExpensesPage() {
 
       <Card>
         <CardHeader>
+          <CardTitle>Filtros</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+            <div className="space-y-2">
+              <Label htmlFor="filter-description">Descrição</Label>
+              <Input
+                id="filter-description"
+                value={filterDescription}
+                onChange={(e) => setFilterDescription(e.target.value)}
+                placeholder="Buscar por descrição"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="filter-from">De</Label>
+              <Input id="filter-from" type="date" value={filterFrom} onChange={(e) => setFilterFrom(e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="filter-to">Até</Label>
+              <Input id="filter-to" type="date" value={filterTo} onChange={(e) => setFilterTo(e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="filter-nature">Natureza</Label>
+              <LabeledSelect
+                id="filter-nature"
+                value={filterNature}
+                onValueChange={setFilterNature}
+                options={natureFilterOptions}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="filter-payment-method">Forma de Pagamento</Label>
+              <LabeledSelect
+                id="filter-payment-method"
+                value={filterPaymentMethod}
+                onValueChange={setFilterPaymentMethod}
+                options={paymentMethodFilterOptions}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="filter-account">Conta</Label>
+              <LabeledSelect
+                id="filter-account"
+                value={filterAccountId}
+                onValueChange={setFilterAccountId}
+                options={accountFilterOptions}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="filter-status">Status</Label>
+              <LabeledSelect
+                id="filter-status"
+                value={filterStatus}
+                onValueChange={setFilterStatus}
+                options={statusFilterOptions}
+              />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
           <CardTitle>Despesas do Mês</CardTitle>
         </CardHeader>
         <CardContent>
@@ -237,7 +334,7 @@ export function ExpensesPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {expenses?.map((transaction) => (
+                  {filteredExpenses.map((transaction) => (
                     <TableRow key={transaction.id}>
                       <TableCell className="font-medium">{transaction.description}</TableCell>
                       <TableCell>{formatDate(transaction.competenceDate)}</TableCell>
@@ -257,7 +354,7 @@ export function ExpensesPage() {
                       </TableCell>
                     </TableRow>
                   ))}
-                  {expenses?.length === 0 && (
+                  {filteredExpenses.length === 0 && (
                     <TableRow>
                       <TableCell colSpan={8} className="text-center text-muted-foreground">
                         Nenhuma despesa registrada no período.

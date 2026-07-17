@@ -30,6 +30,12 @@ import { AccountResponse } from "@/types/dtos";
 import { formatCurrency } from "@/lib/format";
 
 const accountTypeOptions = Object.entries(AccountTypeLabels).map(([value, label]) => ({ value, label }));
+const accountTypeFilterOptions = [{ value: "all", label: "Todos" }, ...accountTypeOptions];
+const statusFilterOptions = [
+  { value: "all", label: "Todos" },
+  { value: "active", label: "Ativa" },
+  { value: "inactive", label: "Inativa" },
+];
 
 const schema = z.object({
   name: z.string().min(1, "Informe o nome da conta."),
@@ -45,6 +51,9 @@ export function AccountsPage() {
   const [open, setOpen] = useState(false);
   const [dialogAccount, setDialogAccount] = useState<{ account: AccountResponse; mode: DialogMode } | null>(null);
   const [editName, setEditName] = useState("");
+  const [filterName, setFilterName] = useState("");
+  const [filterType, setFilterType] = useState("all");
+  const [filterStatus, setFilterStatus] = useState("all");
 
   const { data: accounts, isLoading } = useAccounts();
   const createAccount = useCreateAccount();
@@ -100,7 +109,16 @@ export function AccountsPage() {
   }
 
   const isViewMode = dialogAccount?.mode === "view";
-  const totalBalance = accounts?.reduce((sum, account) => sum + account.currentBalance, 0) ?? 0;
+
+  const filteredAccounts =
+    accounts?.filter((account) => {
+      if (filterType !== "all" && String(account.type) !== filterType) return false;
+      if (filterStatus !== "all" && account.isActive !== (filterStatus === "active")) return false;
+      if (filterName && !account.name.toLowerCase().includes(filterName.toLowerCase())) return false;
+      return true;
+    }) ?? [];
+
+  const totalBalance = filteredAccounts.reduce((sum, account) => sum + account.currentBalance, 0);
 
   return (
     <div className="space-y-6">
@@ -206,6 +224,43 @@ export function AccountsPage() {
 
       <Card>
         <CardHeader>
+          <CardTitle>Filtros</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+            <div className="space-y-2">
+              <Label htmlFor="filter-name">Descrição</Label>
+              <Input
+                id="filter-name"
+                value={filterName}
+                onChange={(e) => setFilterName(e.target.value)}
+                placeholder="Buscar por nome"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="filter-type">Tipo</Label>
+              <LabeledSelect
+                id="filter-type"
+                value={filterType}
+                onValueChange={setFilterType}
+                options={accountTypeFilterOptions}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="filter-status">Status</Label>
+              <LabeledSelect
+                id="filter-status"
+                value={filterStatus}
+                onValueChange={setFilterStatus}
+                options={statusFilterOptions}
+              />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
           <CardTitle>Contas Cadastradas</CardTitle>
         </CardHeader>
         <CardContent>
@@ -223,7 +278,7 @@ export function AccountsPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {accounts?.map((account) => (
+                {filteredAccounts.map((account) => (
                   <TableRow key={account.id}>
                     <TableCell className="font-medium">{account.name}</TableCell>
                     <TableCell>{AccountTypeLabels[account.type]}</TableCell>
@@ -243,7 +298,7 @@ export function AccountsPage() {
                     </TableCell>
                   </TableRow>
                 ))}
-                {accounts?.length === 0 && (
+                {filteredAccounts.length === 0 && (
                   <TableRow>
                     <TableCell colSpan={5} className="text-center text-muted-foreground">
                       Nenhuma conta cadastrada.

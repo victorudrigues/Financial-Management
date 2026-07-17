@@ -54,16 +54,24 @@ const schema = z.object({
 
 type FormValues = z.infer<typeof schema>;
 
-const paymentMethodOptions = Object.entries(PaymentMethodLabels).map(([value, label]) => ({ value, label }));
+const paymentMethodOptions = Object.entries(PaymentMethodLabels)
+  .filter(([value]) => Number(value) !== PaymentMethod.Transferencia)
+  .map(([value, label]) => ({ value, label }));
 const cardBrandOptions = Object.entries(CardBrandLabels).map(([value, label]) => ({ value, label }));
+const statusFilterOptions = [
+  { value: "all", label: "Todos" },
+  ...Object.entries(TransactionStatusLabels).map(([value, label]) => ({ value, label })),
+];
 
 export function IncomePage() {
   const [open, setOpen] = useState(false);
   const [viewingTransaction, setViewingTransaction] = useState<TransactionResponse | null>(null);
-  const from = toIsoDate(firstDayOfMonth());
-  const to = toIsoDate(new Date());
+  const [filterDescription, setFilterDescription] = useState("");
+  const [filterStatus, setFilterStatus] = useState("all");
+  const [filterFrom, setFilterFrom] = useState(toIsoDate(firstDayOfMonth()));
+  const [filterTo, setFilterTo] = useState(toIsoDate(new Date()));
 
-  const { data: income, isLoading } = useIncome(from, to);
+  const { data: income, isLoading } = useIncome(filterFrom, filterTo);
   const { data: accounts } = useAccounts();
   const { data: categories } = useCategories();
   const { data: costCenters } = useCostCenters();
@@ -99,7 +107,14 @@ export function IncomePage() {
   const paymentMachineOptions =
     paymentMachines?.filter((m) => m.isActive).map((machine) => ({ value: machine.id, label: machine.name })) ?? [];
 
-  const totalIncome = income?.reduce((sum, transaction) => sum + transaction.amount, 0) ?? 0;
+  const filteredIncome =
+    income?.filter((transaction) => {
+      if (filterStatus !== "all" && String(transaction.status) !== filterStatus) return false;
+      if (filterDescription && !transaction.description.toLowerCase().includes(filterDescription.toLowerCase())) return false;
+      return true;
+    }) ?? [];
+
+  const totalIncome = filteredIncome.reduce((sum, transaction) => sum + transaction.amount, 0);
 
   const selectedPaymentMethod = watch("paymentMethod");
   const showMachinePicker = selectedPaymentMethod === PaymentMethod.Credito || selectedPaymentMethod === PaymentMethod.Debito;
@@ -248,6 +263,42 @@ export function IncomePage() {
 
       <Card>
         <CardHeader>
+          <CardTitle>Filtros</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
+            <div className="space-y-2">
+              <Label htmlFor="filter-description">Descrição</Label>
+              <Input
+                id="filter-description"
+                value={filterDescription}
+                onChange={(e) => setFilterDescription(e.target.value)}
+                placeholder="Buscar por descrição"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="filter-status">Status</Label>
+              <LabeledSelect
+                id="filter-status"
+                value={filterStatus}
+                onValueChange={setFilterStatus}
+                options={statusFilterOptions}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="filter-from">De</Label>
+              <Input id="filter-from" type="date" value={filterFrom} onChange={(e) => setFilterFrom(e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="filter-to">Até</Label>
+              <Input id="filter-to" type="date" value={filterTo} onChange={(e) => setFilterTo(e.target.value)} />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
           <CardTitle>Receitas do Mês</CardTitle>
         </CardHeader>
         <CardContent>
@@ -265,7 +316,7 @@ export function IncomePage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {income?.map((transaction) => (
+                {filteredIncome.map((transaction) => (
                   <TableRow key={transaction.id}>
                     <TableCell className="font-medium">{transaction.description}</TableCell>
                     <TableCell>{formatDate(transaction.competenceDate)}</TableCell>
@@ -280,7 +331,7 @@ export function IncomePage() {
                     </TableCell>
                   </TableRow>
                 ))}
-                {income?.length === 0 && (
+                {filteredIncome.length === 0 && (
                   <TableRow>
                     <TableCell colSpan={5} className="text-center text-muted-foreground">
                       Nenhuma receita registrada no período.

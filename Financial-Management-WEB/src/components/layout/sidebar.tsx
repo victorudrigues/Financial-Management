@@ -5,6 +5,8 @@ import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
   ArrowLeftRight,
+  Repeat,
+  Banknote,
   TrendingUp,
   TrendingDown,
   Wallet,
@@ -39,6 +41,8 @@ const sections: NavSection[] = [
       { label: "Fluxo de Caixa", href: "/cashflow", icon: ArrowLeftRight },
       { label: "Receitas", href: "/income", icon: TrendingUp },
       { label: "Despesas", href: "/expenses", icon: TrendingDown },
+      { label: "Saque", href: "/withdrawals", icon: Banknote },
+      { label: "Transferências", href: "/transfers", icon: Repeat },
       { label: "Contas", href: "/accounts", icon: Wallet },
       { label: "Categorias", href: "/categories", icon: Tags },
       { label: "Centros de Custo", href: "/cost-centers", icon: Building2 },

@@ -3,7 +3,7 @@ import axios from "axios";
 export const TOKEN_STORAGE_KEY = "fm.accessToken";
 
 export const apiClient = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5080",
+  baseURL: process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5216",
 });
 
 apiClient.interceptors.request.use((config) => {

@@ -72,7 +72,7 @@ export default function LoginPage() {
         </CardHeader>
         <CardContent>
           {!email ? (
-            <form onSubmit={emailForm.handleSubmit(onSubmitEmail)} className="space-y-4">
+            <form key="email-step" onSubmit={emailForm.handleSubmit(onSubmitEmail)} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="email">E-mail</Label>
                 <Input id="email" type="email" placeholder="voce@empresa.com" {...emailForm.register("email")} />
@@ -91,7 +91,7 @@ export default function LoginPage() {
               </p>
             </form>
           ) : (
-            <form onSubmit={passwordForm.handleSubmit(onSubmitPassword)} className="space-y-4">
+            <form key="password-step" onSubmit={passwordForm.handleSubmit(onSubmitPassword)} className="space-y-4">
               <div className="space-y-2">
                 <Label>E-mail</Label>
                 <Input value={email} disabled />
